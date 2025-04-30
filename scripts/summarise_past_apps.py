@@ -3,12 +3,8 @@ import pandas as pd
 
 
 df = pd.read_csv("data/Planning Hack Data v0.1.csv")
-
-print(df.columns)
-
-
+df = df[["Address", "Application Number", "FullText"]].dropna()
 summariser = OpenAISummariser()
 
-json_records = df["FullText"].map(summariser.summarise_document)
-output_df = pd.DataFrame.from_records(json_records)
-print(output_df)
+df["reason"] = df["FullText"].map(summariser.summarise_document)
+df.to_parquet("data/website_data.pq")

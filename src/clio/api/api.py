@@ -1,15 +1,18 @@
 from datetime import date
 from fastapi import FastAPI
+import pandas as pd
 from typing import Union
 
 from clio.api.models import ApplicationSummary
 
 app = FastAPI()
+data = pd.read_parquet("data/website_data.pq")
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+@app.get("/list/{query_str}", response_model=list[str])
+def list_addresses(query_str: str) -> list[str]:
+    idx = data["Address"].str.lower().str.contains(query_str.lower())
+    return data.loc[idx, "Address"].unique()
 
 
 @app.get("/address/{address}", response_model=list[ApplicationSummary])

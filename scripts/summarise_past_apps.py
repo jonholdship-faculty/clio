@@ -1,7 +1,6 @@
 from clio.summary.openai_summariser import OpenAISummariser
 import pandas as pd
 
-
 df = pd.read_csv("data/Planning Hack Data v0.1.csv")
 df = df[["Address", "Application Number", "FullText"]].dropna()
 summariser = OpenAISummariser()

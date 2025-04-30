@@ -26,6 +26,11 @@ class OpenAISummariser:
 
         Read the decision notice below and return one clear paragraph explaining the main reason this outcome was reached. Focus on planning justification, relevant policies, site constraints, and design or amenity impacts.
 
+        The following document may be either:
+        - a local planning authority decision notice, or
+        - a planning inspectorate appeal decision under Section 78 of the Town and Country Planning Act 1990.
+        - enforcement decision
+
         Write clearly and professionally, using a tone similar to these examples:
 
         Example (Refused):
@@ -38,6 +43,12 @@ class OpenAISummariser:
 
         Example (Granted):
         "Granted, subject to conditions, as the development for the variation of condition did not result in a detrimental impact upon the highway network, residential amenity or design and character of the area and also does not exceed the scope of the Environmental Impact Assessment approved at outline."
+
+        Example (Appeal allowed):
+        "The risk to footway users would be limited. It would not cause an unacceptable impact on highway safety or materially undermine the Council’s aim of encouraging sustainable travel modes. It would comply with Policy DE1 of the CLP as it requires development to provide safe public spaces and clear routes that are easy to move through."
+
+        Example (Appeal Dismissed):
+        "The inspector identified that the development has a significantly harmful effect on the character and appearance of the host dwelling and the area. As such, it conflicts with Policy DE1 of the Coventry City Council Local Plan 2017, which, amongst other things, seeks to ensure development respects and enhances their surroundings and positively contribute towards the local identity and character of an area. It would also conflict with the SPG, which provides guidance on house extensions. Furthermore, it would fail to comply with paragraph 130 of the National Planning Policy Framework, which seeks to ensure development is visually attractive as a result of good architecture and is sympathetic to local character."
 
         ### Decision notice:
         {document_text}

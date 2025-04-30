@@ -57,3 +57,37 @@ class OpenAISummariser:
         )
 
         return response.choices[0].message.content.strip()
+
+    def summarise_summaries(self, summaries: list[str]) -> str:
+        prompt = f"""
+        You are Clio, an AI assistant helping UK planning officers.
+
+        Below are multiple summaries of planning application decisions for the same site. They may include approvals, refusals, appeal decisions, and conditions. Your task is to analyse these summaries and provide a single paragraph highlighting the key planning insights about the site, based on its history.
+
+        Your response should:
+        - Identify recurring issues or constraints (e.g. character, design, amenity, transport, heritage).
+        - Reflect on any policy conflicts or appeal outcomes.
+        - Suggest potential next steps, such as:
+        - whether a new application could address previous issues,
+        - whether conditions must be observed,
+        - or whether further assessment or advice should be sought.
+
+        Use plain, professional English and aim to support quicker officer assessment.
+
+        ### Actual summaries to analyse:
+        {chr(10).join(f"{i+1}. {s.strip()}" for i, s in enumerate(summaries))}
+
+        Now respond with a clear summary paragraph. Do not number your response. Do not include a heading. Do not list the original summaries. Just write the paragraph.
+        """
+
+        response = self.client.chat.completions.create(
+            model=self.openai_model,
+            messages=[
+                {"role": "system", "content": "You are Clio, an expert in UK planning policy and site history analysis."},
+                {"role": "user", "content": prompt.strip()},
+            ],
+            temperature=0.4,
+            max_tokens=500
+        )
+
+        return response.choices[0].message.content.strip()

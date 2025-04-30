@@ -1,6 +1,8 @@
+from dotenv import load_dotenv
 import os
 from openai import AzureOpenAI
 
+load_dotenv()
 # Ensure your environment variables are set - these will have been provided as part of the hackathon
 openai_model = os.environ.get("AZURE_OPENAI_MODEL", "gpt-4.1-mini")
 api_version = os.environ.get("OPENAI_API_VERSION", "2024-12-01-preview")

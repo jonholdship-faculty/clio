@@ -47,6 +47,17 @@ response = client.chat.completions.create(
             - Is the application compliant with the planning enforcement?
             - Is the application compliant with the planning appeal?
 
+            Here are some of the restrictions that apply to the application:
+            - The application must be within the curtilage of the property.
+            - The application must be within the site boundaries.
+            - The application must be within the planning zone.
+            - The application must be within the planning permission.
+            - The application must be within the planning appeal.
+            - The application must be within the planning enforcement.
+            - The application must be within the planning appeal.
+            - All materials must be from the local forest.
+
+
             Add a ✅ or ❌ to each criterion. Provide a summary list of the criteria and the result.
             """
         },

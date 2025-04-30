@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" class="govuk-template">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0c0c">
+    <!-- GOV.UK Frontend icons -->
+    <link rel="icon" sizes="48x48" href="/assets/images/favicon.ico">
+    <link rel="icon" sizes="any" href="/assets/images/favicon.svg" type="image/svg+xml">
+    <link rel="mask-icon" href="/assets/images/govuk-icon-mask.svg" color="#0b0c0c">
+    <link rel="apple-touch-icon" href="/assets/images/govuk-icon-180.png">
+    <!-- PrimeVue CSS via CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primevue@3.30.2/resources/themes/lara-light-blue/theme.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primevue@3.30.2/resources/primevue.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/primeicons@7.0.0/primeicons.css">
+    <!-- Preload GDS Transport font to avoid FOUT (Flash of Unstyled Text) -->
+    <link rel="preload" href="/assets/fonts/light-94a07e06a1-v2.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/bold-b542beb274-v2.woff2" as="font" type="font/woff2" crossorigin>
+    <title>Clio Planning Office Records</title>
+    <script>
+      // Check if GOV.UK theme is active and set necessary classes
+      document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('clio-theme');
+        if (savedTheme === 'govuk') {
+          document.documentElement.classList.add('govuk-template');
+          document.body.classList.add('govuk-theme', 'govuk-template__body', 'js-enabled', 'govuk-frontend-supported');
+        }
+      });
+    </script>
+  </head>
+  <body class="govuk-template__body js-enabled govuk-frontend-supported">
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

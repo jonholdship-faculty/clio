@@ -1,23 +1,8 @@
 from clio.summary.openai_summariser import OpenAISummariser
 import pandas as pd
 
-df = pd.read_csv("data/Planning Hack Data v0.1.csv", quotechar='"')
-df = df[["Address", "Application Number", "FullText", "Outcome"]].dropna()
-
-df2 = pd.read_excel("data/Planning Hack Data v0.2.xlsx")
-df2 = df2[["Address", "Application Number", "FullText", "Outcome"]].dropna()
-
-df = pd.concat([df, df2]).reset_index(drop=True)
-df = df.rename(
-    {
-        "Address": "address",
-        "Application Number": "application_number",
-        "FullText": "full_text",
-        "Outcome": "outcome",
-    },
-    axis=1,
-)
-
+df = pd.read_excel("data/master-sheet updated.xlsx").dropna()
+print(len(df))
 summariser = OpenAISummariser()
 
 df["reason"] = df.apply(
@@ -31,11 +16,17 @@ df.to_parquet("data/website_data.pq")
 
 records = []
 for address, group_df in df.groupby("address"):
-    summary_of_summaries = summariser.summarise_summarys(group_df["reason"].values)
+    summary_of_summaries = summariser.summarise_summaries(group_df["reason"].values)
+    application_types = (
+        group_df["application_type"].str.lower().value_counts().to_dict()
+    )
     records.append(
         {
             "address": address,
             "summary": summary_of_summaries,
+            "total_count": len(group_df),
+            "appeals": application_types.get("appeal", 0),
+            "enforcements": application_types.get("enforcement", 0),
         }
     )
 summary_df = pd.DataFrame.from_records(records)

@@ -1,11 +1,14 @@
 from clio.summary.openai_summariser import OpenAISummariser
+import pandas as pd
 
 
-test_doc = """
-outcome fail
-this building is in a conservation area
-"""
+df = pd.read_csv("data/Planning Hack Data v0.1.csv")
+
+print(df.columns)
 
 
 summariser = OpenAISummariser()
-summariser.summarise_document(test_doc)
+
+json_records = df["FullText"].map(summariser.summarise_document)
+output_df = pd.DataFrame.from_records(json_records)
+print(output_df)

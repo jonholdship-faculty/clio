@@ -11,8 +11,8 @@ pip install poetry
 poetry install
 ```
 
-Then run with poetry
+Then run the data set up with poetry
 
 ```
-poetry run python script.py
+poetry run python scripts/summarise_past_apps.py
 ```

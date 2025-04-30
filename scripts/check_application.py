@@ -2,6 +2,7 @@ from openai import AzureOpenAI
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
+import PyPDF2
 
 load_dotenv()
 
@@ -15,14 +16,19 @@ client = AzureOpenAI(api_version=api_version,
             azure_deployment=openai_model,
             api_key=api_key,)
 
-# First upload the file
-with open("data/PLANNING_APPLICATION.pdf", "rb") as f:
-    file = client.files.create(
-        file=f,
-        purpose="assistants"
-    )
+# Extract text from PDF
+def extract_text_from_pdf(pdf_path):
+    text = ""
+    with open(pdf_path, "rb") as f:
+        pdf_reader = PyPDF2.PdfReader(f)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+    return text
 
-# Then use the file in the chat
+# Extract text from the PDF
+pdf_text = extract_text_from_pdf("data/PLANNING_APPLICATION.pdf")
+
+# Use the extracted text in the chat
 response = client.chat.completions.create(
     model=openai_model,
     messages=[
@@ -34,12 +40,19 @@ response = client.chat.completions.create(
             - Is the application compliant with the planning policy?
             - Is the application compliant with the planning law?
             - Is the application compliant with the planning regulations?
+            - Is the application compliant with the planning guidance?
+            - Is the application compliant with the planning conditions?
+            - Is the application compliant with the planning permission?
+            - Is the application compliant with the planning appeal?
+            - Is the application compliant with the planning enforcement?
+            - Is the application compliant with the planning appeal?
+
+            Add a ✅ or ❌ to each criterion. Provide a summary list of the criteria and the result.
             """
         },
         {
             "role": "user",
-            "content": "Please analyze the attached PDF file and provide a summary of the application.",
-            "file_ids": [file.id]
+            "content": f"Please analyze the following planning application text and provide a summary:\n\n{pdf_text}"
         }
     ]
 )

@@ -6,6 +6,38 @@
 const API_BASE = '/api';
 
 /**
+ * Fetch search results for the search dropdown
+ * @param {string} query - The search query
+ * @returns {Promise<Array>} - Array of search results
+ */
+export async function fetchSearchResults(query) {
+  try {
+    // Use the proxy instead of direct URL
+    const response = await fetch(`/api/list/${query}`);
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    // This endpoint returns a simple array of address strings
+    const addresses = await response.json();
+    
+    // Convert to the format expected by the dropdown
+    return addresses.map((address, index) => ({
+      address: address,
+      application_ref: `Search-${index}`,
+      decision_date: new Date().toISOString(),
+      type: 'application',
+      decision_type: '',
+      reason: 'Address search result'
+    }));
+  } catch (error) {
+    console.error('Error fetching search results:', error);
+    throw error;
+  }
+}
+
+/**
  * Fetch planning applications for a specific address
  * @param {string} address - The address to search for
  * @returns {Promise<Array>} - Array of application records

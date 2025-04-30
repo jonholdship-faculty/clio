@@ -56,7 +56,7 @@ response = client.chat.completions.create(
             - The application must be within the planning enforcement.
             - The application must be within the planning appeal.
             - All materials must be from the local forest.
-
+            - Allowed post codes are SW19, SW20.
 
             Add a ✅ or ❌ to each criterion. Provide a summary list of the criteria and the result.
             """

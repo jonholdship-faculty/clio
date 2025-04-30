@@ -2,7 +2,7 @@
   <div class="home-container">
     <div class="container">
       <div class="hero-section animate-slide-up">
-        <h1 class="hero-title">Streamline Your Planning Records</h1>
+        <h1 class="hero-title">Hackathon City Council</h1>
         <p class="hero-description">
           Efficiently search and manage all planning applications, appeals, and enforcement actions from one central dashboard.
         </p>
@@ -27,7 +27,7 @@
                 <!-- Address Records Dropdown -->
                 <div v-if="showDropdown && searchResults.length > 0" class="search-dropdown">
                   <div class="dropdown-header">
-                    <span>Available records for "{{ searchQuery }}"</span>
+                    <span>Matching addresses</span>
                   </div>
                   <div class="dropdown-results">
                     <div 
@@ -36,24 +36,15 @@
                       class="dropdown-item"
                       @click="selectRecord(record)"
                     >
-                      <div class="record-icon" :class="getTypeClass(record.type)">
+                      <div class="address-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" class="item-icon" viewBox="0 0 20 20" fill="currentColor">
-                          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                          <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                         </svg>
                       </div>
-                      <div class="record-info">
-                        <div class="record-title">{{ record.applicationNumber }}</div>
-                        <div class="record-subtitle">{{ record.address }}</div>
-                      </div>
-                      <div class="record-badge" :class="getStatusClass(record.status)">
-                        {{ record.status }}
+                      <div class="address-text">
+                        {{ record.address }}
                       </div>
                     </div>
-                  </div>
-                  <div class="dropdown-footer">
-                    <button @click="searchAddress" class="view-all-btn">
-                      View all results
-                    </button>
                   </div>
                 </div>
                 
@@ -94,7 +85,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { fetchAddressRecords, mapApiDataToRecords } from '../data/api';
+import { fetchAddressRecords, mapApiDataToRecords, fetchSearchResults } from '../data/api';
 
 const router = useRouter();
 const searchQuery = ref('');
@@ -119,10 +110,9 @@ const handleSearchInput = () => {
   // Debounce the API call to avoid excessive requests
   searchTimeout.value = setTimeout(async () => {
     try {
-      // If we're using a real API, we'd call it here
-      const apiData = await fetchAddressRecords(searchQuery.value.trim());
-      const mappedData = mapApiDataToRecords(apiData);
-      searchResults.value = mappedData;
+      // Call the new endpoint for search results
+      const apiData = await fetchSearchResults(searchQuery.value.trim());
+      searchResults.value = mapApiDataToRecords(apiData);
     } catch (error) {
       console.error('Error fetching search results', error);
       searchResults.value = [];
@@ -623,7 +613,13 @@ onUnmounted(() => {
   border-bottom: none;
 }
 
-.record-icon {
+.item-icon {
+  width: 20px;
+  height: 20px;
+  color: white;
+}
+
+.address-icon {
   width: 36px;
   height: 36px;
   display: flex;
@@ -631,93 +627,13 @@ onUnmounted(() => {
   justify-content: center;
   border-radius: var(--radius-sm);
   margin-right: var(--spacing-md);
+  background-color: var(--primary);
 }
 
-.item-icon {
-  width: 20px;
-  height: 20px;
-  color: white;
-}
-
-.type-danger {
-  background-color: #DC2626;
-}
-
-.type-warning {
-  background-color: #D97706;
-}
-
-.type-success {
-  background-color: #059669;
-}
-
-.record-info {
+.address-text {
   flex: 1;
-}
-
-.record-title {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text);
-  margin-bottom: 2px;
-}
-
-.record-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-light);
-}
-
-.record-badge {
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.status-success {
-  background-color: #D1FAE5;
-  color: #059669;
-}
-
-.status-danger {
-  background-color: #FEE2E2;
-  color: #DC2626;
-}
-
-.status-warning {
-  background-color: #FEF3C7;
-  color: #D97706;
-}
-
-.status-info {
-  background-color: #DBEAFE;
-  color: #2563EB;
-}
-
-.status-secondary {
-  background-color: #F3F4F6;
-  color: #4B5563;
-}
-
-.dropdown-footer {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: center;
-}
-
-.view-all-btn {
-  font-size: 0.9rem;
-  color: var(--primary);
-  font-weight: 500;
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
-  transition: background-color var(--transition-normal);
-}
-
-.view-all-btn:hover {
-  background-color: rgba(var(--primary-rgb), 0.05);
 }
 
 .no-results, .loading-results {
@@ -764,16 +680,5 @@ onUnmounted(() => {
 
 :deep(body.govuk-theme) .dropdown-item:hover {
   background-color: #f3f2f1;
-}
-
-:deep(body.govuk-theme) .view-all-btn {
-  font-family: "GDS Transport", arial, sans-serif;
-  color: #1d70b8;
-  text-decoration: underline;
-}
-
-:deep(body.govuk-theme) .view-all-btn:hover {
-  color: #003078;
-  background: none;
 }
 </style> 

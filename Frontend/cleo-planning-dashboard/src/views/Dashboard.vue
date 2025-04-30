@@ -38,69 +38,65 @@
 
       <!-- Content (only show when not loading) -->
       <template v-else>
-        <!-- AI Summary Sections -->
+        <!-- Summary Section - One Large Card -->
         <div class="summary-sections animate-slide-up">
-          <div class="summary-card">
+          <div class="summary-card full-width">
             <div class="summary-header">
               <svg xmlns="http://www.w3.org/2000/svg" class="summary-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <h2>Enforcement Summary</h2>
+              <h2>Overview</h2>
             </div>
             <div class="summary-content">
-              <p>{{ aiSummaries.enforcement }}</p>
-              <div class="summary-metrics">
-                <div class="metric">
-                  <span class="metric-value">2</span>
-                  <span class="metric-label">Actions</span>
+              <p>This address has a complex planning history with multiple applications and enforcement actions. There are several noteworthy trends in the planning history including changes in application types over time and varying decision outcomes.</p>
+              
+              <div class="indicators-row">
+                <div class="indicator primary-indicator">
+                  <span class="indicator-number">3</span>
+                  <span class="indicator-label">Applications</span>
                 </div>
-                <div class="metric">
-                  <span class="metric-value">1</span>
-                  <span class="metric-label">Active</span>
+                
+                <div class="indicator success-indicator">
+                  <span class="indicator-number">33%</span>
+                  <span class="indicator-label">Approval Rate</span>
+                </div>
+                
+                <div class="indicator warning-indicator">
+                  <span class="indicator-number">1</span>
+                  <span class="indicator-label">Successful Appeals</span>
+                </div>
+                
+                <div class="indicator danger-indicator">
+                  <span class="indicator-number">1</span>
+                  <span class="indicator-label">Active Enforcements</span>
+                </div>
+                
+                <div class="indicator danger-indicator">
+                  <span class="indicator-number">2</span>
+                  <span class="indicator-label">Rejected</span>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="summary-card">
-            <div class="summary-header">
-              <svg xmlns="http://www.w3.org/2000/svg" class="summary-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-              </svg>
-              <h2>Appeals Summary</h2>
+        <!-- Map Component -->
+        <div class="map-section animate-fade-in">
+          <div class="map-container">
+            <div class="map-header">
+              <h2>Location</h2>
+              <div class="map-address">{{ address }}</div>
             </div>
-            <div class="summary-content">
-              <p>{{ aiSummaries.appeals }}</p>
-              <div class="summary-metrics">
-                <div class="metric">
-                  <span class="metric-value">3</span>
-                  <span class="metric-label">Total</span>
-                </div>
-                <div class="metric">
-                  <span class="metric-value">33%</span>
-                  <span class="metric-label">Approved</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="summary-card">
-            <div class="summary-header">
-              <svg xmlns="http://www.w3.org/2000/svg" class="summary-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <h2>Planning Application Summary</h2>
-            </div>
-            <div class="summary-content">
-              <p>{{ aiSummaries.planningAppeals }}</p>
-              <div class="summary-metrics">
-                <div class="metric">
-                  <span class="metric-value">45%</span>
-                  <span class="metric-label">Avg. Rate</span>
-                </div>
-                <div class="metric">
-                  <span class="metric-value">33%</span>
-                  <span class="metric-label">This Address</span>
+            <div class="map-content">
+              <div class="map-placeholder">
+                <img :src="`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=15&size=600x400&key=AIzaSyBGCql0HlN4C_D7B2BcIIhtuFGjhB-IKgA&markers=${encodeURIComponent(address)}`" 
+                  :alt="`Map showing ${address}`" 
+                  class="static-map-image"
+                />
+                <div class="map-overlay">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="map-pin-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                  </svg>
                 </div>
               </div>
             </div>
@@ -131,6 +127,18 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
+                  <th @click="sortBy('status')" class="sortable-header">
+                    Status
+                    <span v-if="sortField === 'status'" class="sort-indicator">
+                      {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </th>
+                  <th @click="sortBy('type')" class="sortable-header">
+                    Type
+                    <span v-if="sortField === 'type'" class="sort-indicator">
+                      {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </th>
                   <th @click="sortBy('decisionDate')" class="sortable-header">
                     Decision Date
                     <span v-if="sortField === 'decisionDate'" class="sort-indicator">
@@ -138,42 +146,82 @@
                     </span>
                   </th>
                   <th>Address</th>
-                  <th @click="sortBy('type')" class="sortable-header">
-                    Type
-                    <span v-if="sortField === 'type'" class="sort-indicator">
-                      {{ sortOrder === 'asc' ? '↑' : '↓' }}
-                    </span>
-                  </th>
-                  <th @click="sortBy('status')" class="sortable-header">
-                    Status
-                    <span v-if="sortField === 'status'" class="sort-indicator">
-                      {{ sortOrder === 'asc' ? '↑' : '↓' }}
-                    </span>
-                  </th>
                   <th>Details</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="record in filteredPaginatedRecords" :key="record.id" class="record-row">
-                  <td class="app-number">{{ record.applicationNumber }}</td>
-                  <td>{{ formatDate(record.decisionDate) }}</td>
-                  <td class="address-cell">{{ record.address }}</td>
-                  <td>
-                    <span :class="'type-badge ' + getTypeClass(record.type)">{{ record.type }}</span>
-                  </td>
-                  <td>
-                    <span :class="'status-badge ' + getStatusClass(record.status)">{{ record.status }}</span>
-                  </td>
-                  <td>
-                    <button @click="showDetails(record)" class="btn-icon">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-                <tr v-if="filteredPaginatedRecords.length === 0">
+                <template v-for="record in filteredRecords" :key="record.id">
+                  <tr class="record-row">
+                    <td class="app-number">{{ record.applicationNumber }}</td>
+                    <td>
+                      <span :class="'status-badge ' + getStatusClass(record.status)">{{ record.status }}</span>
+                    </td>
+                    <td>
+                      <span :class="'type-badge ' + getTypeClass(record.type)">{{ record.type }}</span>
+                    </td>
+                    <td>{{ formatDate(record.decisionDate) }}</td>
+                    <td class="address-cell">{{ record.address }}</td>
+                    <td class="actions-cell">
+                      <button @click="showDetails(record)" class="btn-icon info-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                      <button @click="toggleRowExpansion(record.id)" class="btn-icon expand-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
+                          <path v-if="isRowExpanded(record.id)" fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+                          <path v-else fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="isRowExpanded(record.id)" class="expanded-row">
+                    <td colspan="6" class="expanded-content">
+                      <div class="expanded-grid">
+                        <div class="expanded-section">
+                          <h3 class="expanded-header">Application Details</h3>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Application Ref:</span>
+                            <span class="detail-value">{{ record.applicationNumber }}</span>
+                          </div>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Address:</span>
+                            <span class="detail-value">{{ record.address }}</span>
+                          </div>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Status:</span>
+                            <span class="detail-value">{{ record.status }}</span>
+                          </div>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value">{{ record.type }}</span>
+                          </div>
+                        </div>
+                        <div class="expanded-section">
+                          <h3 class="expanded-header">Timeline</h3>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Submission Date:</span>
+                            <span class="detail-value">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</span>
+                          </div>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Review Date:</span>
+                            <span class="detail-value">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</span>
+                          </div>
+                          <div class="expanded-detail">
+                            <span class="detail-label">Decision Date:</span>
+                            <span class="detail-value">{{ formatDate(record.decisionDate) }}</span>
+                          </div>
+                        </div>
+                        <div class="expanded-section full-width">
+                          <h3 class="expanded-header">Description</h3>
+                          <p class="expanded-description">{{ record.details }}</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <tr v-if="filteredRecords.length === 0">
                   <td colspan="6" class="empty-state">
                     <div class="empty-container">
                       <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -185,38 +233,6 @@
                 </tr>
               </tbody>
             </table>
-          </div>
-          
-          <!-- Pagination -->
-          <div class="pagination">
-            <button 
-              @click="prevPage" 
-              :disabled="currentPage === 1" 
-              class="pagination-button"
-              :class="{ 'disabled': currentPage === 1 }"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="pagination-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-              Previous
-            </button>
-            
-            <div class="pagination-info">
-              <span>Page {{ currentPage }} of {{ totalPages }}</span>
-              <span class="pagination-details">Showing {{ startItem }}-{{ endItem }} of {{ filteredRecords.length }} records</span>
-            </div>
-            
-            <button 
-              @click="nextPage" 
-              :disabled="currentPage >= totalPages" 
-              class="pagination-button"
-              :class="{ 'disabled': currentPage >= totalPages }"
-            >
-              Next
-              <svg xmlns="http://www.w3.org/2000/svg" class="pagination-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-              </svg>
-            </button>
           </div>
         </div>
       </template>
@@ -282,14 +298,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { fetchAddressRecords, mapApiDataToRecords } from '../data/api';
 import { aiSummaries } from '../data/sampleData';
 
 const router = useRouter();
+const route = useRoute();
 
 // State variables
-const address = ref('test'); // Default address to search for
+const address = ref(route.query.address || 'test');
 const records = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -298,8 +315,22 @@ const sortField = ref('decisionDate');
 const sortOrder = ref('desc');
 const displayDialog = ref(false);
 const selectedRecord = ref(null);
-const currentPage = ref(1);
-const itemsPerPage = 5;
+const expandedRows = ref([]); // Track which rows are expanded
+
+// Toggle row expansion
+const toggleRowExpansion = (recordId) => {
+  const index = expandedRows.value.indexOf(recordId);
+  if (index >= 0) {
+    expandedRows.value.splice(index, 1);
+  } else {
+    expandedRows.value.push(recordId);
+  }
+};
+
+// Check if a row is expanded
+const isRowExpanded = (recordId) => {
+  return expandedRows.value.includes(recordId);
+};
 
 // Get data from API on component mount
 onMounted(async () => {
@@ -347,47 +378,6 @@ const sortedRecords = computed(() => {
     return 0;
   });
 });
-
-const totalPages = computed(() => {
-  return Math.ceil(filteredRecords.value.length / itemsPerPage);
-});
-
-const startItem = computed(() => {
-  return (currentPage.value - 1) * itemsPerPage + 1;
-});
-
-const endItem = computed(() => {
-  const end = currentPage.value * itemsPerPage;
-  return end > filteredRecords.value.length ? filteredRecords.value.length : end;
-});
-
-const filteredPaginatedRecords = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return sortedRecords.value.slice(start, end);
-});
-
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--;
-  }
-};
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++;
-  }
-};
-
-// Sorting
-const sortBy = (field) => {
-  if (sortField.value === field) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    sortField.value = field;
-    sortOrder.value = 'asc';
-  }
-};
 
 const showDetails = (record) => {
   selectedRecord.value = record;
@@ -440,11 +430,28 @@ const retryFetch = async () => {
     console.error('Error retrying to load records:', err);
   }
 };
+
+// Sorting
+const sortBy = (field) => {
+  if (sortField.value === field) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField.value = field;
+    sortOrder.value = 'asc';
+  }
+};
 </script>
 
 <style scoped>
 .dashboard-container {
   padding-bottom: var(--spacing-2xl);
+  width: 100%;
+}
+
+.container {
+  max-width: 100%;
+  padding: 0 var(--spacing-2xl);
+  width: 100%;
 }
 
 .dashboard-header {
@@ -532,10 +539,8 @@ const retryFetch = async () => {
 
 /* Summary Cards */
 .summary-sections {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
+  width: 100%;
 }
 
 .summary-card {
@@ -544,6 +549,7 @@ const retryFetch = async () => {
   overflow: hidden;
   box-shadow: var(--shadow-md);
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  width: 100%;
 }
 
 .summary-card:hover {
@@ -581,11 +587,125 @@ const retryFetch = async () => {
   line-height: 1.6;
 }
 
-/* Specific GOV.UK styling for summary cards */
-:deep(body.govuk-theme) .summary-sections {
+/* New Indicator Cards */
+.indicators-row {
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  width: 100%;
+}
+
+.indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background-color: white;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  flex: 1;
+  text-align: center;
+}
+
+.indicator:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.primary-indicator {
+  background-color: rgba(var(--primary-rgb), 0.1);
+}
+
+.success-indicator {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.warning-indicator {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.danger-indicator {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.indicator-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+  color: var(--primary);
+}
+
+.primary-indicator .indicator-number {
+  color: var(--primary);
+}
+
+.success-indicator .indicator-number {
+  color: var(--success);
+}
+
+.warning-indicator .indicator-number {
+  color: var(--warning);
+}
+
+.danger-indicator .indicator-number {
+  color: var(--danger);
+}
+
+.indicator-label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* GOV.UK theme adjustments for indicators */
+:deep(body.govuk-theme) .indicator {
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid #b1b4b6;
+  border-left-width: 5px;
+}
+
+:deep(body.govuk-theme) .indicator:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+:deep(body.govuk-theme) .primary-indicator {
+  border-left-color: #1d70b8;
+}
+
+:deep(body.govuk-theme) .success-indicator {
+  border-left-color: #00703c;
+}
+
+:deep(body.govuk-theme) .warning-indicator {
+  border-left-color: #f47738;
+}
+
+:deep(body.govuk-theme) .danger-indicator {
+  border-left-color: #d4351c;
+}
+
+:deep(body.govuk-theme) .indicator-number {
+  border-radius: 0;
+}
+
+:deep(body.govuk-theme) .indicator-label {
+  font-family: "GDS Transport", arial, sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Specific GOV.UK styling for summary cards */
+:deep(body.govuk-theme) .summary-sections {
+  display: block;
 }
 
 :deep(body.govuk-theme) .summary-card {
@@ -626,12 +746,6 @@ const retryFetch = async () => {
 :deep(body.govuk-theme) .summary-content p {
   font-size: 16px;
   line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-height: 4.5em;
   margin-bottom: 20px;
 }
 
@@ -641,102 +755,13 @@ const retryFetch = async () => {
   height: 22px;
 }
 
-.summary-metrics {
-  display: flex;
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-md);
-}
-
-/* Default theme metrics styling */
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  align-items: center;
-  background-color: rgba(var(--primary-rgb), 0.05);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-lg);
-  min-width: 80px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  text-align: center;
-}
-
-.metric:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.metric-value {
-  font-size: 1.8rem;
-  font-weight: 700;
-  background: linear-gradient(45deg, var(--primary), #1e40af);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-fill-color: transparent;
-  order: 1;
-  margin-bottom: 4px;
-}
-
-.metric-label {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  order: 2;
-}
-
-/* GOV.UK theme metrics styling */
-:deep(body.govuk-theme) .summary-metrics {
-  display: flex;
-  gap: 20px;
-  border-top: 1px solid #b1b4b6;
-  padding-top: 15px;
-  margin-top: 5px;
-}
-
-:deep(body.govuk-theme) .metric {
-  background-color: transparent;
-  padding: 0;
-  border-radius: 0;
-  box-shadow: none;
-  align-items: flex-start;
-  min-width: 0;
-}
-
-:deep(body.govuk-theme) .metric:hover {
-  transform: none;
-  box-shadow: none;
-}
-
-:deep(body.govuk-theme) .metric-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1d70b8;
-  background: none;
-  -webkit-text-fill-color: currentColor;
-  font-family: "GDS Transport", arial, sans-serif;
-  margin-bottom: 4px;
-  order: 1;
-}
-
-:deep(body.govuk-theme) .metric-label {
-  font-size: 16px;
-  font-weight: normal;
-  color: #0b0c0c;
-  text-transform: none;
-  letter-spacing: normal;
-  font-family: "GDS Transport", arial, sans-serif;
-  order: 2;
-}
-
 /* Records Section */
 .records-section {
   padding: var(--spacing-lg);
   background-color: white;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+  width: 100%;
 }
 
 .section-header {
@@ -932,55 +957,6 @@ const retryFetch = async () => {
   opacity: 0.5;
 }
 
-/* Pagination */
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--border);
-}
-
-.pagination-button {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  background-color: white;
-  border: 1px solid var(--border);
-  color: var(--text);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.pagination-button:hover:not(.disabled) {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.pagination-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.pagination-info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.pagination-details {
-  font-size: 0.8rem;
-  color: var(--text-light);
-}
-
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -1000,7 +976,7 @@ const retryFetch = async () => {
   background-color: white;
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 700px;
+  max-width: 900px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
@@ -1071,7 +1047,8 @@ const retryFetch = async () => {
 }
 
 .full-width {
-  grid-column: span 2;
+  width: 100%;
+  max-width: 100%;
 }
 
 .detail-label {
@@ -1115,11 +1092,6 @@ const retryFetch = async () => {
     gap: var(--spacing-md);
   }
   
-  .pagination {
-    flex-direction: column;
-    gap: var(--spacing-md);
-  }
-  
   .detail-grid {
     grid-template-columns: 1fr;
   }
@@ -1160,5 +1132,211 @@ const retryFetch = async () => {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+.actions-cell {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.info-btn {
+  background-color: var(--info);
+}
+
+.info-btn:hover {
+  background-color: var(--info-dark, #0369a1);
+}
+
+.expand-btn {
+  background-color: var(--success);
+}
+
+.expand-btn:hover {
+  background-color: var(--success-dark, #047857);
+}
+
+.expanded-row {
+  background-color: rgba(var(--primary-rgb), 0.03);
+}
+
+.expanded-content {
+  padding: var(--spacing-lg);
+  border-top: 1px dashed var(--border);
+  border-bottom: 1px dashed var(--border);
+}
+
+.expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.expanded-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.expanded-section.full-width {
+  grid-column: 1 / -1;
+}
+
+.expanded-header {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--spacing-xs);
+}
+
+.expanded-detail {
+  display: flex;
+  gap: var(--spacing-sm);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: var(--text-light);
+  min-width: 130px;
+}
+
+.detail-value {
+  color: var(--text);
+}
+
+.expanded-description {
+  line-height: 1.6;
+  margin: 0;
+  color: var(--text);
+}
+
+:deep(body.govuk-theme) .expanded-row {
+  background-color: #f3f2f1;
+}
+
+:deep(body.govuk-theme) .expanded-header {
+  font-family: "GDS Transport", arial, sans-serif;
+  font-weight: 700;
+  color: #0b0c0c;
+  border-bottom-color: #b1b4b6;
+}
+
+:deep(body.govuk-theme) .detail-label {
+  font-family: "GDS Transport", arial, sans-serif;
+  font-weight: 700;
+  color: #505a5f;
+}
+
+:deep(body.govuk-theme) .detail-value {
+  font-family: "GDS Transport", arial, sans-serif;
+  color: #0b0c0c;
+}
+
+@media (max-width: 768px) {
+  .expanded-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Map Section */
+.map-section {
+  margin-bottom: var(--spacing-xl);
+  width: 100%;
+}
+
+.map-container {
+  background-color: white;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  width: 100%;
+}
+
+.map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--primary);
+  color: white;
+}
+
+.map-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: white;
+}
+
+.map-address {
+  font-size: 0.9rem;
+  font-weight: 500;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.map-content {
+  width: 100%;
+}
+
+.map-placeholder {
+  position: relative;
+  width: 100%;
+  height: 400px;
+}
+
+.static-map-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+
+.map-pin-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--primary);
+}
+
+:deep(body.govuk-theme) .map-container {
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid #b1b4b6;
+}
+
+:deep(body.govuk-theme) .map-header {
+  background-color: #1d70b8;
+  padding: 15px;
+}
+
+:deep(body.govuk-theme) .map-header h2 {
+  font-family: "GDS Transport", arial, sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+}
+
+:deep(body.govuk-theme) .map-address {
+  font-family: "GDS Transport", arial, sans-serif;
+}
+
+:deep(body.govuk-theme) .map-frame {
+  border-radius: 0;
 }
 </style> 

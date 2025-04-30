@@ -26,6 +26,17 @@ df["reason"] = df.apply(
     ),
     axis=1,
 )
-print(df)
 
 df.to_parquet("data/website_data.pq")
+
+records = []
+for address, group_df in df.groupby("address"):
+    summary_of_summaries = summariser.summarise_summarys(group_df["reason"].values)
+    records.append(
+        {
+            "address": address,
+            "summary": summary_of_summaries,
+        }
+    )
+summary_df = pd.DataFrame.from_records(records)
+summary_df.to_parquet("data/summaries.pq")

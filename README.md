@@ -17,6 +17,22 @@ Then run the data set up with poetry
 poetry run python scripts/summarise_past_apps.py
 ```
 
+## Run the app
+
+The app is in two parts: a frontend and a backend.
+
+To run the backend:
+
+```
+poetry run fastapi dev src/clio/api/api.py
+```
+
+This depends on the data processing script above being run first.
+
+Then run the frontend:
+
+```
+
 ## Add MCP Server to Claude
 
 Open the claude desktop app and go to the settings > development > Edit config file.
@@ -104,3 +120,7 @@ I want to build a permanent marquee, give me a summary in the following format:
 
 Don't add any other information.
 ```
+
+## Next Steps
+- Develop a way to create and maintain a database of summarised applications which the backend can use in place of the in-memory "database" we currently use.
+- Dockerise or otherwise prepare for deployment outside of dev

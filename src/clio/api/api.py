@@ -24,7 +24,7 @@ def query_address(address: str):
     ]
     return [
         ApplicationSummary(
-            decision_date=date.fromisoformat("2023-01-01"),
+            decision_date=row["date"],
             application_ref=row["application_number"],
             address=row["address"],
             type=row["application_type"],

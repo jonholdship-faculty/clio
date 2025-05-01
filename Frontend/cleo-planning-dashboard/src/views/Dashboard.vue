@@ -47,31 +47,31 @@
               <h2>AI Overview</h2>
             </div>
             <div class="summary-content">
-              <p>This address has a complex planning history with multiple applications and enforcement actions. There are several noteworthy trends in the planning history including changes in application types over time and varying decision outcomes.</p>
+              <p>{{ aiSummaryText }}</p>
               
               <div class="indicators-row">
                 <div class="indicator primary-indicator">
-                  <span class="indicator-number">3</span>
+                  <span class="indicator-number">{{ recordStats.totalApplications }}</span>
                   <span class="indicator-label">Applications</span>
                 </div>
                 
                 <div class="indicator success-indicator">
-                  <span class="indicator-number">33%</span>
+                  <span class="indicator-number">{{ recordStats.approvalRate }}%</span>
                   <span class="indicator-label">Approval Rate</span>
                 </div>
                 
                 <div class="indicator warning-indicator">
-                  <span class="indicator-number">1</span>
+                  <span class="indicator-number">{{ recordStats.successfulAppeals }}</span>
                   <span class="indicator-label">Successful Appeals</span>
                 </div>
                 
                 <div class="indicator danger-indicator">
-                  <span class="indicator-number">1</span>
+                  <span class="indicator-number">{{ recordStats.activeEnforcements }}</span>
                   <span class="indicator-label">Active Enforcements</span>
                 </div>
                 
                 <div class="indicator danger-indicator">
-                  <span class="indicator-number">2</span>
+                  <span class="indicator-number">{{ recordStats.rejected }}</span>
                   <span class="indicator-label">Rejected</span>
                 </div>
               </div>
@@ -150,6 +150,7 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
+                  <th>Address</th>
                   <th @click="sortBy('status')" class="sortable-header">
                     Status
                     <span v-if="sortField === 'status'" class="sort-indicator">
@@ -162,22 +163,22 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th>Address</th>
                   <th>Details</th>
                 </tr>
               </thead>
               <tbody>
                 <template v-for="record in filteredRecords" :key="record.id">
+                  <!-- Main data row -->
                   <tr class="record-row">
                     <td>{{ formatDate(record.decisionDate) }}</td>
                     <td class="app-number">{{ record.applicationNumber }}</td>
+                    <td class="address-cell">{{ record.address }}</td>
                     <td>
                       <span :class="'status-badge ' + getStatusClass(record.status)">{{ record.status }}</span>
                     </td>
                     <td>
                       <span :class="'type-badge ' + getTypeClass(record.type)">{{ record.type }}</span>
                     </td>
-                    <td class="address-cell">{{ record.address }}</td>
                     <td class="actions-cell">
                       <button @click="showDetails(record)" class="btn-icon info-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -194,74 +195,87 @@
                       </button>
                     </td>
                   </tr>
+                  
+                  <!-- AI Summary row (only visible when row is NOT expanded) -->
+                  <tr v-if="!isRowExpanded(record.id)" class="summary-row">
+                    <td colspan="6" class="summary-cell">
+                      <div class="summary-container">
+                        <p class="summary-text">
+                          <FeatherIcon name="cpu" size="sm" class="ai-icon" />
+                          <span class="ai-label">AI Summary:</span> {{ record.description }}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Timeline row (only visible when expanded) -->
                   <tr v-if="isRowExpanded(record.id)" class="expanded-row">
                     <td colspan="6" class="expanded-content">
                       <div class="expanded-grid">
-                        <!-- Vertical Timeline -->
-                        <div class="vertical-timeline-container">
-                          <div class="vertical-timeline">
-                            <div class="timeline-header">Application Timeline</div>
+                        <!-- Timeline Card -->
+                        <div class="timeline-container">
+                          <div class="timeline-header">
+                            <FeatherIcon name="clock" size="sm" color="var(--primary)" />
+                            <span>Application Timeline</span>
+                          </div>
+                          
+                          <!-- Timeline items in a row format for better space utilization -->
+                          <div class="timeline-items-container">
+                            <!-- Submission -->
+                            <div class="timeline-item">
+                              <div class="vertical-timeline-marker">
+                                <div class="vertical-marker-inner">
+                                  <FeatherIcon name="edit-3" size="md" color="white" strokeWidth="2.5" />
+                                </div>
+                              </div>
+                              <div class="vertical-timeline-content">
+                                <div class="vertical-timeline-title">Application Submitted</div>
+                                <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</div>
+                              </div>
+                            </div>
                             
-                            <!-- Timeline items in a row format for better space utilization -->
-                            <div class="timeline-items-container">
-                              <!-- Submission -->
-                              <div class="vertical-timeline-item">
-                                <div class="vertical-timeline-marker">
-                                  <div class="vertical-marker-inner">
-                                    <FeatherIcon name="edit-3" size="md" color="white" strokeWidth="2.5" />
-                                  </div>
-                                </div>
-                                <div class="vertical-timeline-content">
-                                  <div class="vertical-timeline-title">Application Submitted</div>
-                                  <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</div>
+                            <!-- Review -->
+                            <div class="timeline-item">
+                              <div class="vertical-timeline-marker">
+                                <div class="vertical-marker-inner">
+                                  <FeatherIcon name="clipboard" size="md" color="white" strokeWidth="2.5" />
                                 </div>
                               </div>
-                              
-                              <!-- Review -->
-                              <div class="vertical-timeline-item">
-                                <div class="vertical-timeline-marker">
-                                  <div class="vertical-marker-inner">
-                                    <FeatherIcon name="clipboard" size="md" color="white" strokeWidth="2.5" />
-                                  </div>
-                                </div>
-                                <div class="vertical-timeline-content">
-                                  <div class="vertical-timeline-title">Application Reviewed</div>
-                                  <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</div>
+                              <div class="vertical-timeline-content">
+                                <div class="vertical-timeline-title">Application Reviewed</div>
+                                <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</div>
+                              </div>
+                            </div>
+                            
+                            <!-- Decision -->
+                            <div class="timeline-item">
+                              <div class="vertical-timeline-marker" :class="'vertical-status-marker-' + getStatusClass(record.status)">
+                                <div class="vertical-marker-inner">
+                                  <FeatherIcon 
+                                    :name="record.status === 'Approved' || record.status === 'Approved with Conditions' || record.status === 'Resolved' || record.status === 'Granted' ? 'check' : 
+                                          record.status === 'Condition Discharged' ? 'check-circle' :
+                                          record.status === 'Rejected' ? 'x' : 'alert-circle'" 
+                                    size="md" 
+                                    color="white" 
+                                    strokeWidth="2.5" 
+                                  />
                                 </div>
                               </div>
-                              
-                              <!-- Decision -->
-                              <div class="vertical-timeline-item">
-                                <div class="vertical-timeline-marker" :class="'vertical-status-marker-' + getStatusClass(record.status)">
-                                  <div class="vertical-marker-inner">
-                                    <FeatherIcon 
-                                      :name="record.status === 'Approved' || record.status === 'Approved with Conditions' || record.status === 'Resolved' || record.status === 'Granted' ? 'check' : 
-                                            record.status === 'Condition Discharged' ? 'check-circle' :
-                                            record.status === 'Rejected' ? 'x' : 'alert-circle'" 
-                                      size="md" 
-                                      color="white" 
-                                      strokeWidth="2.5" 
-                                    />
-                                  </div>
-                                </div>
-                                <div class="vertical-timeline-content">
-                                  <div class="vertical-timeline-title">Decision: {{ record.status }}</div>
-                                  <div class="vertical-timeline-date">{{ formatDate(record.decisionDate) }}</div>
-                                </div>
+                              <div class="vertical-timeline-content">
+                                <div class="vertical-timeline-title">Decision: {{ record.status }}</div>
+                                <div class="vertical-timeline-date">{{ formatDate(record.decisionDate) }}</div>
                               </div>
                             </div>
                           </div>
                         </div>
                         
-                        <!-- Description Panel -->
-                        <div class="description-panel">
+                        <!-- AI Summary Card -->
+                        <div class="ai-summary-container">
                           <div class="timeline-header">
                             <FeatherIcon name="cpu" size="sm" color="var(--primary)" />
                             <span>AI Summary</span>
                           </div>
-                          <div class="description-content">
-                            <p class="application-description">{{ record.details }}</p>
-                          </div>
+                          <p class="ai-summary-text">{{ record.description }}</p>
                         </div>
                       </div>
                     </td>
@@ -648,6 +662,99 @@ const filteredRecords = computed(() => {
   });
 });
 
+// Calculate statistics from records data
+const recordStats = computed(() => {
+  if (!records.value.length) {
+    return {
+      totalApplications: 0,
+      approvalRate: 0,
+      successfulAppeals: 0,
+      activeEnforcements: 0,
+      rejected: 0
+    };
+  }
+
+  // Count applications by type
+  const applications = records.value.filter(r => r.type === 'Planning Application').length;
+  
+  // Count approved applications
+  const approved = records.value.filter(r => 
+    (r.type === 'Planning Application' || r.type === 'Appeal') && 
+    (r.status === 'Approved' || r.status === 'Approved with Conditions' || 
+     r.status === 'Granted' || r.status === 'Condition Discharged' || 
+     r.status === 'Resolved')
+  ).length;
+  
+  // Calculate approval rate
+  const totalDecided = records.value.filter(r => 
+    (r.type === 'Planning Application' || r.type === 'Appeal') && 
+    (r.status !== 'Pending')
+  ).length;
+  
+  const approvalRate = totalDecided ? Math.round((approved / totalDecided) * 100) : 0;
+  
+  // Count successful appeals
+  const successfulAppeals = records.value.filter(r => 
+    r.type === 'Appeal' && 
+    (r.status === 'Approved' || r.status === 'Approved with Conditions' || 
+     r.status === 'Granted' || r.status === 'Condition Discharged')
+  ).length;
+  
+  // Count active enforcements
+  const activeEnforcements = records.value.filter(r => 
+    r.type === 'Enforcement' && r.status === 'Active'
+  ).length;
+  
+  // Count rejected applications
+  const rejected = records.value.filter(r => 
+    (r.type === 'Planning Application' || r.type === 'Appeal') && 
+    r.status === 'Rejected'
+  ).length;
+  
+  return {
+    totalApplications: applications,
+    approvalRate,
+    successfulAppeals,
+    activeEnforcements,
+    rejected
+  };
+});
+
+// Generate summary text based on records
+const aiSummaryText = computed(() => {
+  if (!records.value.length) {
+    return "No planning data available for this address.";
+  }
+  
+  const types = new Set(records.value.map(r => r.type));
+  const hasMultipleTypes = types.size > 1;
+  const hasEnforcements = records.value.some(r => r.type === 'Enforcement');
+  const hasAppeals = records.value.some(r => r.type === 'Appeal');
+  
+  let summary = `This address has ${hasMultipleTypes ? 'a' : ''} ${hasMultipleTypes ? 'complex' : 'simple'} planning history`;
+  
+  if (hasMultipleTypes) {
+    summary += " with multiple applications";
+    if (hasEnforcements) summary += " and enforcement actions";
+    summary += ".";
+  } else {
+    summary += ".";
+  }
+  
+  if (records.value.length > 2) {
+    summary += " There are several noteworthy trends in the planning history including ";
+    
+    if (hasMultipleTypes) {
+      summary += "changes in application types over time";
+      summary += " and varying decision outcomes.";
+    } else {
+      summary += "variations in decision outcomes over time.";
+    }
+  }
+  
+  return summary;
+});
+
 const sortedRecords = computed(() => {
   return [...filteredRecords.value].sort((a, b) => {
     let aValue = a[sortField.value];
@@ -680,27 +787,69 @@ const formatDate = (dateString) => {
 };
 
 const getTypeClass = (type) => {
-  switch (type) {
-    case 'Enforcement': return 'type-danger';
-    case 'Appeal': return 'type-warning';
-    case 'Planning Application': return 'type-success';
-    default: return '';
-  }
+  if (!type) return 'type-default';
+  
+  // Normalize the type to uppercase for case-insensitive matching
+  const normalizedType = type.toUpperCase();
+  
+  // Application types
+  if (normalizedType.includes('ENFORCEMENT')) return 'type-danger';
+  if (normalizedType.includes('APPEAL')) return 'type-warning';
+  if (normalizedType.includes('PLANNING APPLICATION') || normalizedType.includes('FULL MAJOR')) return 'type-success';
+  
+  // Specialized application types
+  if (normalizedType.includes('DISCHARGE OF CONDITION')) return 'type-purple';
+  if (normalizedType.includes('NON-MATERIAL AMENDMENT') || normalizedType.includes('NMA')) return 'type-teal';
+  if (normalizedType.includes('ADVERTISEMENT') || normalizedType.includes('ADV')) return 'type-indigo';
+  
+  // Default to blue if no specific type is matched
+  return 'type-default';
 };
 
 const getStatusClass = (status) => {
-  switch (status) {
-    case 'Approved': return 'status-success';
-    case 'Granted': return 'status-success';
-    case 'Condition Discharged': return 'status-success';
-    case 'Rejected': return 'status-danger';
-    case 'Pending': return 'status-warning';
-    case 'Active': return 'status-info';
-    case 'Withdrawn': return 'status-secondary';
-    case 'Resolved': return 'status-success';
-    case 'Approved with Conditions': return 'status-success';
-    default: return 'status-info';
+  if (!status) return 'status-default';
+  
+  // Normalize the status to uppercase for case-insensitive matching
+  const normalizedStatus = status.toUpperCase();
+  
+  // Success statuses (approved/granted)
+  if (normalizedStatus.includes('APPROVED') || 
+      normalizedStatus.includes('GRANTED') || 
+      normalizedStatus.includes('RESOLVED') || 
+      normalizedStatus.includes('CONDITION DISCHARGED')) {
+    return 'status-success';
   }
+  
+  // Failure statuses (rejected)
+  if (normalizedStatus.includes('REJECTED') || 
+      normalizedStatus.includes('REFUSED') || 
+      normalizedStatus.includes('DECLINED')) {
+    return 'status-danger';
+  }
+  
+  // Warning statuses (pending/in process)
+  if (normalizedStatus.includes('PENDING') || 
+      normalizedStatus.includes('OUTCOME PENDING') || 
+      normalizedStatus.includes('AWAITING')) {
+    return 'status-warning';
+  }
+  
+  // Active/open statuses
+  if (normalizedStatus.includes('ACTIVE') || 
+      normalizedStatus.includes('OPEN') || 
+      normalizedStatus.includes('IN PROGRESS')) {
+    return 'status-info';
+  }
+  
+  // Closed/withdrawn statuses
+  if (normalizedStatus.includes('WITHDRAWN') || 
+      normalizedStatus.includes('CLOSED') || 
+      normalizedStatus.includes('SUPERSEDED')) {
+    return 'status-secondary';
+  }
+  
+  // Default to info if no specific status is matched
+  return 'status-default';
 };
 
 const retryFetch = async () => {
@@ -1207,6 +1356,26 @@ const sortBy = (field) => {
   color: #059669;
 }
 
+.type-purple {
+  background-color: #EDE9FE;
+  color: #7C3AED;
+}
+
+.type-teal {
+  background-color: #CCFBF1;
+  color: #0D9488;
+}
+
+.type-indigo {
+  background-color: #E0E7FF;
+  color: #4F46E5;
+}
+
+.type-default {
+  background-color: #E4E4E7;
+  color: #3F3F46;
+}
+
 .status-success {
   background-color: #D1FAE5;
   color: #059669;
@@ -1230,6 +1399,11 @@ const sortBy = (field) => {
 .status-secondary {
   background-color: #F3F4F6;
   color: #4B5563;
+}
+
+.status-default {
+  background-color: #E4E4E7;
+  color: #3F3F46;
 }
 
 .btn-icon {
@@ -1617,31 +1791,36 @@ const sortBy = (field) => {
   margin: 0;
 }
 
-/* Fixed styles for the expandable section */
+/* Updated styles for expanded content */
 .expanded-grid {
   display: grid;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: var(--spacing-lg);
+  padding: var(--spacing-md);
 }
 
-/* Vertical Timeline Container in expandable rows */
-.vertical-timeline-container {
-  padding: var(--spacing-sm);
-  max-width: 100%;
-}
-
-.vertical-timeline {
-  position: relative;
-  height: 100%;
-  background-color: var(--background);
+.timeline-container, .ai-summary-container {
+  background-color: white;
   border-radius: var(--radius-md);
   padding: var(--spacing-md);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 
+.ai-summary-text {
+  margin: 0;
+  padding: var(--spacing-md);
+  line-height: 1.6;
+  color: var(--text);
+  text-align: justify;
+  background-color: var(--background-lighter);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary-light);
+}
+
+/* Timeline in expanded row */
 .timeline-header {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: var(--spacing-md);
   color: var(--primary);
@@ -1653,65 +1832,23 @@ const sortBy = (field) => {
 }
 
 .timeline-items-container {
-  position: relative;
-  padding-left: var(--spacing-xs);
-}
-
-/* Description Panel in expandable rows */
-.description-panel {
-  background-color: var(--background);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  height: 100%;
   display: flex;
-  flex-direction: column;
-  max-height: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  justify-content: space-between;
+  gap: var(--spacing-md);
 }
 
-.description-content {
-  flex: 1;
-  margin-top: var(--spacing-sm);
-}
-
-.application-description {
-  line-height: 1.6;
-  margin: 0;
-  color: var(--text);
-  background-color: white;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-sm);
-  border-left: 4px solid var(--primary-light);
-  height: auto;
-  overflow: visible;
-  font-size: 1rem;
-}
-
-/* Status section in modal */
-.status-section {
-  margin-bottom: var(--spacing-md);
-}
-
-.status-banner {
-  padding: var(--spacing-md);
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin: 0;
-}
-
+/* Mobile view adjustments */
 @media (max-width: 768px) {
   .expanded-grid {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
   }
   
-  .vertical-timeline-container {
+  .timeline-items-container {
+    flex-direction: column;
+  }
+  
+  .timeline-item {
     margin-bottom: var(--spacing-md);
   }
 }
@@ -1929,5 +2066,97 @@ const sortBy = (field) => {
 :deep(.leaflet-control-zoom-out:hover) {
   background-color: var(--background) !important;
   color: var(--primary) !important;
+}
+
+/* Summary row in the table */
+.summary-row {
+  background-color: var(--background-lighter);
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-cell {
+  padding: 0 !important;
+}
+
+.summary-container {
+  padding: var(--spacing-sm) var(--spacing-md);
+  position: relative;
+}
+
+.summary-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: justify;
+  position: relative;
+  /* Remove max-height and truncation */
+  max-height: none;
+  overflow: visible;
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+}
+
+.ai-icon {
+  color: var(--primary);
+  margin-right: var(--spacing-xs);
+  vertical-align: text-bottom;
+}
+
+.ai-label {
+  font-weight: 600;
+  color: var(--primary);
+  margin-right: var(--spacing-xs);
+}
+
+/* Timeline in expanded row */
+.timeline-container {
+  background-color: var(--background-lighter);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  margin: var(--spacing-sm) 0;
+}
+
+.timeline-header {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.timeline-items-container {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding-left: var(--spacing-xs);
+}
+
+.timeline-item {
+  position: relative;
+  flex: 1;
+  padding-left: 45px;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Set appropriate background colors */
+:root {
+  --background-lighter: #F9FAFB;
+}
+
+/* Mobile view adjustments */
+@media (max-width: 768px) {
+  .timeline-items-container {
+    flex-direction: column;
+  }
+  
+  .timeline-item {
+    margin-bottom: var(--spacing-md);
+  }
 }
 </style>

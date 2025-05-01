@@ -34,6 +34,7 @@ def query_address(address: str):
             total_applications=summary["total_count"].values[0],
             appeals=summary["appeals"].values[0],
             enforcements=summary["enforcements"].values[0],
+            approvalrate=summary["approval_rate"].values[0],
         )
         for _, row in rows.iterrows()
     ]

@@ -63,27 +63,27 @@
                 <div class="indicator warning-indicator">
                   <span class="indicator-number">{{ recordStats.successfulAppeals }}</span>
                   <span class="indicator-label">Successful Appeals</span>
-                </div>
+              </div>
                 
                 <div class="indicator danger-indicator">
                   <span class="indicator-number">{{ recordStats.activeEnforcements }}</span>
                   <span class="indicator-label">Active Enforcements</span>
-                </div>
-                
+          </div>
+
                 <div class="indicator danger-indicator">
                   <span class="indicator-number">{{ recordStats.rejected }}</span>
                   <span class="indicator-label">Rejected</span>
+            </div>
+                </div>
                 </div>
               </div>
-            </div>
-          </div>
 
           <!-- Map Component - Take up 1/3 of width -->
           <div class="map-section">
             <div class="map-container">
               <div class="map-header">
                 <h2>Location</h2>
-              </div>
+            </div>
               <div class="map-content">
                 <div id="property-map" class="leaflet-map"></div>
                 <div v-if="mapLoading" class="map-loading">
@@ -91,13 +91,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                   <span>Loading property boundary...</span>
-                </div>
+          </div>
                 <div v-if="mapError" class="map-error">
                   <svg xmlns="http://www.w3.org/2000/svg" class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              </svg>
                   <span>{{ mapError }}</span>
-                </div>
+            </div>
               </div>
             </div>
           </div>
@@ -142,7 +142,6 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th>Address</th>
                   <th @click="sortBy('status')" class="sortable-header">
                     Status
                     <span v-if="sortField === 'status'" class="sort-indicator">
@@ -164,7 +163,6 @@
                   <tr class="record-row" @click="toggleRowExpansion(record.id)">
                     <td>{{ formatDate(record.decisionDate) }}</td>
                     <td class="app-number">{{ record.applicationNumber }}</td>
-                    <td class="address-cell">{{ record.address }}</td>
                     <td>
                       <span :class="'status-badge ' + getStatusClass(record.status)">{{ record.status }}</span>
                     </td>
@@ -180,7 +178,7 @@
                   
                   <!-- AI Summary row (only visible when row is NOT expanded) -->
                   <tr v-if="!isRowExpanded(record.id)" class="summary-row">
-                    <td colspan="6" class="summary-cell">
+                    <td colspan="5" class="summary-cell">
                       <div class="summary-container">
                         <p class="summary-text">
                           <FeatherIcon name="cpu" size="sm" class="ai-icon" />
@@ -192,7 +190,7 @@
                   
                   <!-- Timeline row (only visible when expanded) -->
                   <tr v-if="isRowExpanded(record.id)" class="expanded-row">
-                    <td colspan="6" class="expanded-content">
+                    <td colspan="5" class="expanded-content">
                       <div class="expanded-grid">
                         <!-- Timeline Card - Vertical layout taking up 1/3 or less -->
                         <div class="timeline-container">
@@ -264,7 +262,7 @@
                   </tr>
                 </template>
                 <tr v-if="filteredRecords.length === 0">
-                  <td colspan="6" class="empty-state">
+                  <td colspan="5" class="empty-state">
                     <div class="empty-container">
                       <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -288,7 +286,7 @@
             <div class="modal-title">
               <h3>Planning Application Details</h3>
               <div class="modal-subtitle">
-                <span class="modal-app-number">{{ selectedRecord?.applicationNumber }}</span>
+              <span class="modal-app-number">{{ selectedRecord?.applicationNumber }}</span>
                 <span class="modal-separator">•</span>
                 <span :class="'type-badge-small ' + getTypeClass(selectedRecord?.type)">{{ selectedRecord?.type }}</span>
               </div>
@@ -307,26 +305,26 @@
                     <FeatherIcon name="map-pin" size="sm" color="var(--primary)" />
                     Location Information
                   </h4>
-                  <div class="detail-group">
-                    <div class="detail-label">Address</div>
+              <div class="detail-group">
+                <div class="detail-label">Address</div>
                     <div class="detail-value address-value">{{ selectedRecord.address }}</div>
-                  </div>
-                  
-                  <div class="detail-group">
+              </div>
+              
+              <div class="detail-group">
                     <div class="detail-label">Reference</div>
                     <div class="detail-value mono">{{ selectedRecord.applicationNumber }}</div>
-                  </div>
-                  
-                  <div class="detail-group">
-                    <div class="detail-label">Type</div>
-                    <div class="detail-value">
-                      <span :class="'type-badge ' + getTypeClass(selectedRecord.type)">
-                        {{ selectedRecord.type }}
-                      </span>
+              </div>
+              
+              <div class="detail-group">
+                <div class="detail-label">Type</div>
+                <div class="detail-value">
+                  <span :class="'type-badge ' + getTypeClass(selectedRecord.type)">
+                    {{ selectedRecord.type }}
+                  </span>
                     </div>
-                  </div>
                 </div>
-
+              </div>
+              
                 <!-- Timeline moved inside left column -->
                 <div class="detail-section timeline-section">
                   <h4 class="section-title">
@@ -344,16 +342,16 @@
                       <div class="vertical-timeline-content">
                         <div class="vertical-timeline-title">Application Submitted</div>
                         <div class="vertical-timeline-date">{{ formatDate(new Date(selectedRecord.decisionDate).setMonth(new Date(selectedRecord.decisionDate).getMonth() - 2)) }}</div>
-                      </div>
-                    </div>
-                    
+                </div>
+              </div>
+              
                     <!-- Review -->
                     <div class="vertical-timeline-item">
                       <div class="vertical-timeline-marker">
                         <div class="vertical-marker-inner">
                           <FeatherIcon name="clipboard" size="sm" color="white" />
-                        </div>
-                      </div>
+              </div>
+            </div>
                       <div class="vertical-timeline-content">
                         <div class="vertical-timeline-title">Application Reviewed</div>
                         <div class="vertical-timeline-date">{{ formatDate(new Date(selectedRecord.decisionDate).setMonth(new Date(selectedRecord.decisionDate).getMonth() - 1)) }}</div>
@@ -661,7 +659,6 @@ const filteredRecords = computed(() => {
   const filter = tableFilter.value.toLowerCase();
   return records.value.filter(record => {
     return record.applicationNumber.toLowerCase().includes(filter) ||
-           record.address.toLowerCase().includes(filter) ||
            record.type.toLowerCase().includes(filter) ||
            record.status.toLowerCase().includes(filter) ||
            record.description.toLowerCase().includes(filter);
@@ -799,7 +796,7 @@ const generateSummaryText = () => {
     if (hasMultipleTypes) {
       summary += "changes in application types over time";
       summary += " and varying decision outcomes.";
-    } else {
+  } else {
       summary += "variations in decision outcomes over time.";
     }
   }
@@ -1998,7 +1995,7 @@ const apiStats = ref({
 }
 
 .timeline-items-container.vertical {
-  flex-direction: column;
+    flex-direction: column;
   position: relative;
 }
 
@@ -2017,7 +2014,7 @@ const apiStats = ref({
   position: relative;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+    align-items: flex-start;
   margin-bottom: var(--spacing-md);
   padding-left: 45px;
 }
@@ -2053,7 +2050,7 @@ const apiStats = ref({
   background-color: white;
   box-shadow: var(--shadow-md);
   display: flex;
-  flex-direction: column;
+    flex-direction: column;
   height: 100%;
   flex: 1;
 }
@@ -2351,4 +2348,4 @@ const apiStats = ref({
     margin-bottom: var(--spacing-md);
   }
 }
-</style>
+</style> 

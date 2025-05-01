@@ -427,30 +427,57 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { fetchAddressRecords, mapApiDataToRecords } from '../data/api';
-import { aiSummaries } from '../data/sampleData';
-import FeatherIcon from '../components/FeatherIcon.vue';
-import { fetchBoundary } from '../services/boundary';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import { fetchAddressRecords, mapApiDataToRecords } from "../data/api";
+import { aiSummaries } from "../data/sampleData";
+import FeatherIcon from "../components/FeatherIcon.vue";
+import { fetchBoundary } from "../services/boundary";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
 const router = useRouter();
 const route = useRoute();
 
 // State variables
-const address = ref(route.query.address || 'test');
+const address = ref(route.query.address || "test");
 const records = ref([]);
 const loading = ref(true);
 const error = ref(null);
-const tableFilter = ref('');
-const sortField = ref('decisionDate');
-const sortOrder = ref('desc');
+const tableFilter = ref("");
+const sortField = ref("decisionDate");
+const sortOrder = ref("desc");
 const displayDialog = ref(false);
 const selectedRecord = ref(null);
 const expandedRows = ref([]);
 const allExpanded = ref(false);
+
+// GeoJSON data for the site
+const siteGeoJSON = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [-1.5131759444203396, 52.43820266758567],
+          [-1.5131759444203396, 52.437558897566674],
+          [-1.5128938407395651, 52.43754976600931],
+          [-1.512891344246981, 52.43748432312674],
+          [-1.5126217230290138, 52.43748127926921],
+          [-1.5126167300439306, 52.43754976600931],
+          [-1.5120724946241353, 52.43754824408302],
+          [-1.512069998131551, 52.43819962377779],
+          [-1.5131734479277554, 52.43820418948934],
+        ],
+      },
+    },
+  ],
+};
+
+let geoJsonLayer = null;
 
 // Map related state
 const mapLoading = ref(false);
@@ -462,36 +489,45 @@ let boundaryLayer = null;
 // Initialize and clean up the map
 const initMap = async () => {
   if (map) return; // Map already initialized
-  
+
   // Wait for the DOM to be ready
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  const mapContainer = document.getElementById('property-map');
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  const mapContainer = document.getElementById("property-map");
   if (!mapContainer) {
-    console.error('Map container not found');
+    console.error("Map container not found");
     return;
   }
-  
+
   try {
-    const OS_KEY = "AnMmQNd5qLVDhJuSQGYypNsSozw1DEqj";
-    
-    // Initialize the map with a default UK center
-    map = L.map('property-map').setView([51.505, -0.09], 13);
-    
-    // Add the OS tile layer
+    // Initialize the map with a default center and zoom level
+    map = L.map("property-map").setView([52.438, -1.513], 16);
+
+    // Add the OpenStreetMap tile layer
     L.tileLayer(
-      `https://api.os.uk/maps/raster/v1/zxy/Light_3857/{z}/{x}/{y}.png?key=${OS_KEY}`,
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
-        attribution: '© Ordnance Survey, © OpenStreetMap contributors',
-        maxZoom: 18
+        attribution: "© OpenStreetMap contributors",
+        maxZoom: 18,
       }
     ).addTo(map);
-    
-    // Try to fetch and display the boundary
-    await fetchPropertyBoundary();
+
+    // Add the GeoJSON layer for the boundary
+    geoJsonLayer = L.geoJSON(siteGeoJSON, {
+      style: {
+        color: "#FF5500",
+        weight: 3,
+        opacity: 0.8,
+      },
+    }).addTo(map);
+
+    // Fit the map to the GeoJSON bounds with padding
+    map.fitBounds(geoJsonLayer.getBounds(), { padding: [50, 50] });
   } catch (error) {
-    console.error('Error initializing map:', error);
-    mapError.value = 'Failed to initialize map';
+    console.error("Error initializing map:", error);
+    mapError.value = "Failed to initialize map.";
+  } finally {
+    mapLoading.value = false;
   }
 };
 
@@ -505,41 +541,40 @@ const cleanupMap = () => {
 // Fetch and display the property boundary
 const fetchPropertyBoundary = async () => {
   if (!address.value || !map) return;
-  
+
   mapLoading.value = true;
   mapError.value = null;
   boundarySource.value = null;
-  
+
   try {
     // Clear previous boundary if exists
     if (boundaryLayer) {
       map.removeLayer(boundaryLayer);
       boundaryLayer = null;
     }
-    
+
     // Fetch the boundary
     const result = await fetchBoundary(address.value);
     boundarySource.value = result.source;
-    
+
     // Add the boundary to the map
     boundaryLayer = L.geoJSON(result.geojson, {
       style: {
-        color: '#FF5500',
+        color: "#FF5500",
         weight: 2,
         opacity: 0.8,
-        fillColor: '#FF5500',
-        fillOpacity: 0.2
-      }
+        fillColor: "#FF5500",
+        fillOpacity: 0.2,
+      },
     }).addTo(map);
-    
+
     // Fit the map to the boundary
     map.fitBounds(boundaryLayer.getBounds(), { padding: [30, 30] });
-    
+
     // Add a marker for the center
     L.marker([result.center.lat, result.center.lon]).addTo(map);
-    
   } catch (err) {
-    console.error('Error fetching property boundary:', err);
+    console.error("Error fetching property boundary:", err);
     mapError.value = `Failed to load property boundary: ${err.message}`;
   } finally {
     mapLoading.value = false;
@@ -566,7 +601,7 @@ const toggleAllRows = () => {
     expandedRows.value = [];
   } else {
     // Expand all rows
-    expandedRows.value = records.value.map(record => record.id);
+    expandedRows.value = records.value.map((record) => record.id);
   }
   allExpanded.value = !allExpanded.value;
 };
@@ -585,13 +620,13 @@ onMounted(async () => {
     // Map API data to the format expected by the UI
     records.value = mapApiDataToRecords(apiData);
     loading.value = false;
-    
+
     // Initialize the map after fetching records
     await initMap();
   } catch (err) {
-    error.value = 'Failed to load planning records. Please try again later.';
+    error.value = "Failed to load planning records. Please try again later.";
     loading.value = false;
-    console.error('Error loading records:', err);
+    console.error("Error loading records:", err);
   }
 });
 

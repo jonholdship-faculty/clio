@@ -10,9 +10,10 @@ APPROVAL_TYPES = [
 ]
 
 df = pd.read_excel("data/master-sheet updated.xlsx").dropna()
-print(len(df))
+
 summariser = OpenAISummariser()
 
+df["address"] = df["address"].str.replace("\n", " ")
 df["reason"] = df.apply(
     lambda row: summariser.summarise_document(
         document_text=row["full_text"], outcome=row["outcome"]

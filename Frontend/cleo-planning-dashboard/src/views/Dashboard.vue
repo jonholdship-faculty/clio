@@ -4,7 +4,7 @@
       <div class="dashboard-header animate-fade-in">
         <div class="address-header">
           <h1>Planning Records</h1>
-          <div class="address-badge">
+          <div class="address-badge larger-badge">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
             </svg>
@@ -83,14 +83,6 @@
             <div class="map-container">
               <div class="map-header">
                 <h2>Location</h2>
-                <div class="map-address">{{ address }}</div>
-                <div v-if="boundarySource" class="map-source">
-                  <span>Source: {{ 
-                    boundarySource === 'HMLR' ? 'HM Land Registry' : 
-                    boundarySource === 'OSM' ? 'OpenStreetMap' :
-                    'Demo Data'
-                  }}</span>
-                </div>
               </div>
               <div class="map-content">
                 <div id="property-map" class="leaflet-map"></div>
@@ -169,7 +161,7 @@
               <tbody>
                 <template v-for="record in filteredRecords" :key="record.id">
                   <!-- Main data row -->
-                  <tr class="record-row">
+                  <tr class="record-row" @click="toggleRowExpansion(record.id)">
                     <td>{{ formatDate(record.decisionDate) }}</td>
                     <td class="app-number">{{ record.applicationNumber }}</td>
                     <td class="address-cell">{{ record.address }}</td>
@@ -180,18 +172,8 @@
                       <span :class="'type-badge ' + getTypeClass(record.type)">{{ record.type }}</span>
                     </td>
                     <td class="actions-cell">
-                      <button @click="showDetails(record)" class="btn-icon info-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                          <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                        </svg>
-                      </button>
-                      <button @click="toggleRowExpansion(record.id)" class="btn-icon expand-btn">
-                        <FeatherIcon 
-                          :name="isRowExpanded(record.id) ? 'minus' : 'plus'" 
-                          size="sm" 
-                          color="white" 
-                        />
+                      <button @click.stop="showDetails(record)" class="btn-icon info-btn" aria-label="View details">
+                        <FeatherIcon name="file-text" size="sm" color="white" strokeWidth="2" />
                       </button>
                     </td>
                   </tr>
@@ -212,15 +194,15 @@
                   <tr v-if="isRowExpanded(record.id)" class="expanded-row">
                     <td colspan="6" class="expanded-content">
                       <div class="expanded-grid">
-                        <!-- Timeline Card -->
+                        <!-- Timeline Card - Vertical layout taking up 1/3 or less -->
                         <div class="timeline-container">
                           <div class="timeline-header">
                             <FeatherIcon name="clock" size="sm" color="var(--primary)" />
                             <span>Application Timeline</span>
                           </div>
                           
-                          <!-- Timeline items in a row format for better space utilization -->
-                          <div class="timeline-items-container">
+                          <!-- Timeline items in a vertical format -->
+                          <div class="timeline-items-container vertical">
                             <!-- Submission -->
                             <div class="timeline-item">
                               <div class="vertical-timeline-marker">
@@ -269,7 +251,7 @@
                           </div>
                         </div>
                         
-                        <!-- AI Summary Card -->
+                        <!-- AI Summary Card - Taking up 2/3 or more -->
                         <div class="ai-summary-container">
                           <div class="timeline-header">
                             <FeatherIcon name="cpu" size="sm" color="var(--primary)" />
@@ -633,6 +615,30 @@ onMounted(async () => {
     const apiData = await fetchAddressRecords(address.value);
     // Map API data to the format expected by the UI
     records.value = mapApiDataToRecords(apiData);
+    
+    // If available, use the summary data provided by the API for the overview section
+    if (apiData.length > 0) {
+      // Use the overall summary text directly from the API
+      if (apiData[0].overall_summary) {
+        // Correctly update the ref value
+        aiSummaryText.value = apiData[0].overall_summary;
+      } else {
+        // Generate a fallback summary if API doesn't provide one
+        aiSummaryText.value = generateSummaryText();
+      }
+      
+      // Store API stats to use directly in the UI
+      apiStats.value = {
+        totalApplications: apiData[0].total_applications || 0,
+        approvalRate: apiData[0].approvalrate || 0,
+        appeals: apiData[0].appeals || 0,
+        enforcements: apiData[0].enforcements || 0
+      };
+    } else {
+      // Generate a fallback summary if no API data
+      aiSummaryText.value = generateSummaryText();
+    }
+    
     loading.value = false;
 
     // Initialize the map after fetching records
@@ -664,6 +670,27 @@ const filteredRecords = computed(() => {
 
 // Calculate statistics from records data
 const recordStats = computed(() => {
+  // If we have valid API stats, use those directly
+  if (apiStats.value.totalApplications > 0) {
+    return {
+      totalApplications: apiStats.value.totalApplications,
+      approvalRate: apiStats.value.approvalRate,
+      successfulAppeals: apiStats.value.appeals,
+      activeEnforcements: apiStats.value.enforcements,
+      rejected: records.value.filter(r => 
+        (r.type === 'Planning Application' || r.type === 'Appeal') && 
+        (r.status === 'Rejected' || 
+         r.status === 'Refused' || 
+         r.status === 'Declined' ||
+         r.status === 'Appeal Dismissed' ||
+         r.status.toLowerCase().includes('refused') ||
+         r.status.toLowerCase().includes('rejected') ||
+         r.status.toLowerCase().includes('dismissed'))
+      ).length
+    };
+  }
+
+  // Fall back to calculated stats if API stats aren't available
   if (!records.value.length) {
     return {
       totalApplications: 0,
@@ -677,18 +704,26 @@ const recordStats = computed(() => {
   // Count applications by type
   const applications = records.value.filter(r => r.type === 'Planning Application').length;
   
-  // Count approved applications
+  // Count approved applications - include all variants of approval statuses
   const approved = records.value.filter(r => 
     (r.type === 'Planning Application' || r.type === 'Appeal') && 
-    (r.status === 'Approved' || r.status === 'Approved with Conditions' || 
-     r.status === 'Granted' || r.status === 'Condition Discharged' || 
-     r.status === 'Resolved')
+    (r.status === 'Approved' || 
+     r.status === 'Approved with Conditions' || 
+     r.status === 'Granted' || 
+     r.status === 'Condition Discharged' || 
+     r.status === 'Resolved' ||
+     r.status.toLowerCase().includes('approval') ||
+     r.status.toLowerCase().includes('granted') ||
+     r.status.toLowerCase().includes('allowed'))
   ).length;
   
   // Calculate approval rate
   const totalDecided = records.value.filter(r => 
     (r.type === 'Planning Application' || r.type === 'Appeal') && 
-    (r.status !== 'Pending')
+    (r.status !== 'Pending' && 
+     r.status !== 'Awaiting Decision' &&
+     r.status !== 'In Progress' &&
+     r.status !== 'Outcome Pending')
   ).length;
   
   const approvalRate = totalDecided ? Math.round((approved / totalDecided) * 100) : 0;
@@ -696,19 +731,33 @@ const recordStats = computed(() => {
   // Count successful appeals
   const successfulAppeals = records.value.filter(r => 
     r.type === 'Appeal' && 
-    (r.status === 'Approved' || r.status === 'Approved with Conditions' || 
-     r.status === 'Granted' || r.status === 'Condition Discharged')
+    (r.status === 'Approved' || 
+     r.status === 'Approved with Conditions' || 
+     r.status === 'Granted' || 
+     r.status === 'Condition Discharged' ||
+     r.status === 'Appeal Allowed' ||
+     r.status.toLowerCase().includes('allowed'))
   ).length;
   
   // Count active enforcements
   const activeEnforcements = records.value.filter(r => 
-    r.type === 'Enforcement' && r.status === 'Active'
+    r.type === 'Enforcement' && 
+    (r.status === 'Active' || 
+     r.status === 'Breach of Condition' ||
+     r.status === 'Enforcement Notice Served' ||
+     r.status === 'In Progress')
   ).length;
   
   // Count rejected applications
   const rejected = records.value.filter(r => 
     (r.type === 'Planning Application' || r.type === 'Appeal') && 
-    r.status === 'Rejected'
+    (r.status === 'Rejected' || 
+     r.status === 'Refused' || 
+     r.status === 'Declined' ||
+     r.status === 'Appeal Dismissed' ||
+     r.status.toLowerCase().includes('refused') ||
+     r.status.toLowerCase().includes('rejected') ||
+     r.status.toLowerCase().includes('dismissed'))
   ).length;
   
   return {
@@ -720,8 +769,11 @@ const recordStats = computed(() => {
   };
 });
 
-// Generate summary text based on records
-const aiSummaryText = computed(() => {
+// AI summary text - now defined as a ref, not computed
+const aiSummaryText = ref("Loading summary...");
+
+// Generate fallback summary text based on records if API doesn't provide one
+const generateSummaryText = () => {
   if (!records.value.length) {
     return "No planning data available for this address.";
   }
@@ -753,7 +805,7 @@ const aiSummaryText = computed(() => {
   }
   
   return summary;
-});
+};
 
 const sortedRecords = computed(() => {
   return [...filteredRecords.value].sort((a, b) => {
@@ -812,12 +864,25 @@ const getStatusClass = (status) => {
   // Normalize the status to uppercase for case-insensitive matching
   const normalizedStatus = status.toUpperCase();
   
-  // Success statuses (approved/granted)
-  if (normalizedStatus.includes('APPROVED') || 
-      normalizedStatus.includes('GRANTED') || 
-      normalizedStatus.includes('RESOLVED') || 
-      normalizedStatus.includes('CONDITION DISCHARGED')) {
-    return 'status-success';
+  // Success statuses with different gradations of green
+  if (normalizedStatus.includes('APPROVED')) {
+    return 'status-success-approved';
+  }
+  
+  if (normalizedStatus.includes('GRANTED')) {
+    return 'status-success-granted';
+  }
+  
+  if (normalizedStatus.includes('APPROVED WITH CONDITIONS')) {
+    return 'status-success-conditions';
+  }
+  
+  if (normalizedStatus.includes('CONDITION DISCHARGED')) {
+    return 'status-success-discharged';
+  }
+  
+  if (normalizedStatus.includes('RESOLVED')) {
+    return 'status-success-resolved';
   }
   
   // Failure statuses (rejected)
@@ -877,6 +942,14 @@ const sortBy = (field) => {
     sortOrder.value = 'asc';
   }
 };
+
+// Add a new ref to store API statistics
+const apiStats = ref({
+  totalApplications: 0,
+  approvalRate: 0,
+  appeals: 0,
+  enforcements: 0
+});
 </script>
 
 <style scoped>
@@ -919,6 +992,11 @@ const sortBy = (field) => {
   border-radius: var(--radius-xl);
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.larger-badge {
+  font-size: 1.05rem;
+  padding: var(--spacing-sm) var(--spacing-lg);
 }
 
 .address-badge .icon {
@@ -1051,6 +1129,7 @@ const sortBy = (field) => {
   color: var(--text);
   margin-bottom: var(--spacing-lg);
   line-height: 1.6;
+  text-align: justify;
 }
 
 /* New Indicator Cards */
@@ -1280,35 +1359,90 @@ const sortBy = (field) => {
 
 .records-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
   font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .records-table th {
-  background-color: var(--background);
+  background-color: var(--primary-light);
+  color: white;
   padding: var(--spacing-md);
   font-weight: 600;
-  color: var(--text);
   white-space: nowrap;
 }
 
-.sortable-header {
-  cursor: pointer;
-  position: relative;
-  padding-right: var(--spacing-xl) !important;
-}
-
-.sort-indicator {
-  position: absolute;
-  right: var(--spacing-md);
-  color: var(--primary);
+.records-table tr {
+  border-bottom: 1px solid var(--border);
 }
 
 .records-table td {
   padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border);
   vertical-align: middle;
+}
+
+/* Alternate record groups with different background colors */
+.record-row:nth-child(4n+1), 
+.record-row:nth-child(4n+1) + .summary-row {
+  background-color: white;
+}
+
+.record-row:nth-child(4n+3), 
+.record-row:nth-child(4n+3) + .summary-row {
+  background-color: var(--background-lighter);
+}
+
+.record-row {
+  transition: background-color var(--transition-fast);
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+}
+
+/* Add subtle highlighting on hover */
+.record-row:hover {
+  background-color: rgba(var(--primary-rgb), 0.05);
+}
+
+/* Increase spacing and highlight the summary row */
+.summary-row {
+  border-bottom: 2px solid var(--border);
+  margin-bottom: var(--spacing-md);
+}
+
+.summary-cell {
+  padding: 0 !important;
+}
+
+.summary-container {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md) var(--spacing-md);
+  position: relative;
+}
+
+/* Add additional space between record groups */
+.expanded-row + .record-row {
+  border-top: 16px solid var(--background);
+}
+
+.summary-row + .record-row {
+  border-top: 16px solid var(--background);
+}
+
+/* Enhance the info button appearance */
+.info-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.3);
+}
+
+.info-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.4);
 }
 
 .app-number {
@@ -1322,14 +1456,6 @@ const sortBy = (field) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.record-row {
-  transition: background-color var(--transition-fast);
-}
-
-.record-row:hover {
-  background-color: rgba(59, 130, 246, 0.05);
 }
 
 .type-badge, .status-badge {
@@ -1376,9 +1502,29 @@ const sortBy = (field) => {
   color: #3F3F46;
 }
 
-.status-success {
+.status-success-approved {
   background-color: #D1FAE5;
   color: #059669;
+}
+
+.status-success-granted {
+  background-color: #A7F3D0;
+  color: #047857;
+}
+
+.status-success-conditions {
+  background-color: #6EE7B7;
+  color: #065F46;
+}
+
+.status-success-discharged {
+  background-color: #34D399;
+  color: #064E3B;
+}
+
+.status-success-resolved {
+  background-color: #ECFDF5;
+  color: #10B981;
 }
 
 .status-danger {
@@ -1794,7 +1940,7 @@ const sortBy = (field) => {
 /* Updated styles for expanded content */
 .expanded-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(250px, 1fr) 2fr;
   gap: var(--spacing-lg);
   padding: var(--spacing-md);
 }
@@ -1807,6 +1953,15 @@ const sortBy = (field) => {
   border: 1px solid var(--border);
 }
 
+.timeline-container {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-summary-container {
+  flex: 1;
+}
+
 .ai-summary-text {
   margin: 0;
   padding: var(--spacing-md);
@@ -1816,6 +1971,12 @@ const sortBy = (field) => {
   background-color: var(--background-lighter);
   border-radius: var(--radius-sm);
   border-left: 4px solid var(--primary-light);
+  box-sizing: border-box;
+  overflow-y: auto;
+  max-height: 300px;
+  display: block;
+  height: auto;
+  min-height: 100px;
 }
 
 /* Timeline in expanded row */
@@ -1833,8 +1994,36 @@ const sortBy = (field) => {
 
 .timeline-items-container {
   display: flex;
-  justify-content: space-between;
   gap: var(--spacing-md);
+}
+
+.timeline-items-container.vertical {
+  flex-direction: column;
+  position: relative;
+}
+
+.timeline-items-container.vertical::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 18px;
+  width: 2px;
+  background-color: var(--border);
+  z-index: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+  padding-left: 45px;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
 }
 
 /* Mobile view adjustments */
@@ -1844,12 +2033,12 @@ const sortBy = (field) => {
     gap: var(--spacing-md);
   }
   
-  .timeline-items-container {
-    flex-direction: column;
-  }
-  
   .timeline-item {
     margin-bottom: var(--spacing-md);
+  }
+  
+  .ai-summary-text {
+    max-height: 200px;
   }
 }
 
@@ -1885,14 +2074,17 @@ const sortBy = (field) => {
 }
 
 .map-address {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   opacity: 0.9;
+  font-weight: normal;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.map-source {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  margin-top: 5px;
+.small-address {
+  font-size: 0.7rem;
 }
 
 .map-content {

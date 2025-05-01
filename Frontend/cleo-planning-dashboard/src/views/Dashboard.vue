@@ -4,7 +4,7 @@
       <div class="dashboard-header animate-fade-in">
         <div class="address-header">
           <h1>Planning Records</h1>
-          <div class="address-badge">
+          <div class="address-badge larger-badge">
             <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
             </svg>
@@ -47,31 +47,31 @@
               <h2>AI Overview</h2>
             </div>
             <div class="summary-content">
-              <p>This address has a complex planning history with multiple applications and enforcement actions. There are several noteworthy trends in the planning history including changes in application types over time and varying decision outcomes.</p>
+              <p>{{ aiSummaryText }}</p>
               
               <div class="indicators-row">
                 <div class="indicator primary-indicator">
-                  <span class="indicator-number">3</span>
+                  <span class="indicator-number">{{ recordStats.totalApplications }}</span>
                   <span class="indicator-label">Applications</span>
                 </div>
                 
                 <div class="indicator success-indicator">
-                  <span class="indicator-number">33%</span>
+                  <span class="indicator-number">{{ recordStats.approvalRate }}%</span>
                   <span class="indicator-label">Approval Rate</span>
                 </div>
                 
                 <div class="indicator warning-indicator">
-                  <span class="indicator-number">1</span>
+                  <span class="indicator-number">{{ recordStats.successfulAppeals }}</span>
                   <span class="indicator-label">Successful Appeals</span>
                 </div>
                 
                 <div class="indicator danger-indicator">
-                  <span class="indicator-number">1</span>
+                  <span class="indicator-number">{{ recordStats.activeEnforcements }}</span>
                   <span class="indicator-label">Active Enforcements</span>
                 </div>
                 
                 <div class="indicator danger-indicator">
-                  <span class="indicator-number">2</span>
+                  <span class="indicator-number">{{ recordStats.rejected }}</span>
                   <span class="indicator-label">Rejected</span>
                 </div>
               </div>
@@ -83,14 +83,6 @@
             <div class="map-container">
               <div class="map-header">
                 <h2>Location</h2>
-                <div class="map-address">{{ address }}</div>
-                <div v-if="boundarySource" class="map-source">
-                  <span>Source: {{ 
-                    boundarySource === 'HMLR' ? 'HM Land Registry' : 
-                    boundarySource === 'OSM' ? 'OpenStreetMap' :
-                    'Demo Data'
-                  }}</span>
-                </div>
               </div>
               <div class="map-content">
                 <div id="property-map" class="leaflet-map"></div>
@@ -150,6 +142,7 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
+                  <th>Address</th>
                   <th @click="sortBy('status')" class="sortable-header">
                     Status
                     <span v-if="sortField === 'status'" class="sort-indicator">
@@ -162,106 +155,109 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th>Address</th>
                   <th>Details</th>
                 </tr>
               </thead>
               <tbody>
                 <template v-for="record in filteredRecords" :key="record.id">
-                  <tr class="record-row">
+                  <!-- Main data row -->
+                  <tr class="record-row" @click="toggleRowExpansion(record.id)">
                     <td>{{ formatDate(record.decisionDate) }}</td>
                     <td class="app-number">{{ record.applicationNumber }}</td>
+                    <td class="address-cell">{{ record.address }}</td>
                     <td>
                       <span :class="'status-badge ' + getStatusClass(record.status)">{{ record.status }}</span>
                     </td>
                     <td>
                       <span :class="'type-badge ' + getTypeClass(record.type)">{{ record.type }}</span>
                     </td>
-                    <td class="address-cell">{{ record.address }}</td>
                     <td class="actions-cell">
-                      <button @click="showDetails(record)" class="btn-icon info-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                          <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
-                        </svg>
-                      </button>
-                      <button @click="toggleRowExpansion(record.id)" class="btn-icon expand-btn">
-                        <FeatherIcon 
-                          :name="isRowExpanded(record.id) ? 'minus' : 'plus'" 
-                          size="sm" 
-                          color="white" 
-                        />
+                      <button @click.stop="showDetails(record)" class="btn-icon info-btn" aria-label="View details">
+                        <FeatherIcon name="file-text" size="sm" color="white" strokeWidth="2" />
                       </button>
                     </td>
                   </tr>
+                  
+                  <!-- AI Summary row (only visible when row is NOT expanded) -->
+                  <tr v-if="!isRowExpanded(record.id)" class="summary-row">
+                    <td colspan="6" class="summary-cell">
+                      <div class="summary-container">
+                        <p class="summary-text">
+                          <FeatherIcon name="cpu" size="sm" class="ai-icon" />
+                          <span class="ai-label">AI Summary:</span> {{ record.description }}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  <!-- Timeline row (only visible when expanded) -->
                   <tr v-if="isRowExpanded(record.id)" class="expanded-row">
                     <td colspan="6" class="expanded-content">
                       <div class="expanded-grid">
-                        <!-- Vertical Timeline -->
-                        <div class="vertical-timeline-container">
-                          <div class="vertical-timeline">
-                            <div class="timeline-header">Application Timeline</div>
+                        <!-- Timeline Card - Vertical layout taking up 1/3 or less -->
+                        <div class="timeline-container">
+                          <div class="timeline-header">
+                            <FeatherIcon name="clock" size="sm" color="var(--primary)" />
+                            <span>Application Timeline</span>
+                          </div>
+                          
+                          <!-- Timeline items in a vertical format -->
+                          <div class="timeline-items-container vertical">
+                            <!-- Submission -->
+                            <div class="timeline-item">
+                              <div class="vertical-timeline-marker">
+                                <div class="vertical-marker-inner">
+                                  <FeatherIcon name="edit-3" size="md" color="white" strokeWidth="2.5" />
+                                </div>
+                              </div>
+                              <div class="vertical-timeline-content">
+                                <div class="vertical-timeline-title">Application Submitted</div>
+                                <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</div>
+                              </div>
+                            </div>
                             
-                            <!-- Timeline items in a row format for better space utilization -->
-                            <div class="timeline-items-container">
-                              <!-- Submission -->
-                              <div class="vertical-timeline-item">
-                                <div class="vertical-timeline-marker">
-                                  <div class="vertical-marker-inner">
-                                    <FeatherIcon name="edit-3" size="md" color="white" strokeWidth="2.5" />
-                                  </div>
-                                </div>
-                                <div class="vertical-timeline-content">
-                                  <div class="vertical-timeline-title">Application Submitted</div>
-                                  <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</div>
+                            <!-- Review -->
+                            <div class="timeline-item">
+                              <div class="vertical-timeline-marker">
+                                <div class="vertical-marker-inner">
+                                  <FeatherIcon name="clipboard" size="md" color="white" strokeWidth="2.5" />
                                 </div>
                               </div>
-                              
-                              <!-- Review -->
-                              <div class="vertical-timeline-item">
-                                <div class="vertical-timeline-marker">
-                                  <div class="vertical-marker-inner">
-                                    <FeatherIcon name="clipboard" size="md" color="white" strokeWidth="2.5" />
-                                  </div>
-                                </div>
-                                <div class="vertical-timeline-content">
-                                  <div class="vertical-timeline-title">Application Reviewed</div>
-                                  <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</div>
+                              <div class="vertical-timeline-content">
+                                <div class="vertical-timeline-title">Application Reviewed</div>
+                                <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</div>
+                              </div>
+                            </div>
+                            
+                            <!-- Decision -->
+                            <div class="timeline-item">
+                              <div class="vertical-timeline-marker" :class="'vertical-status-marker-' + getStatusClass(record.status)">
+                                <div class="vertical-marker-inner">
+                                  <FeatherIcon 
+                                    :name="record.status === 'Approved' || record.status === 'Approved with Conditions' || record.status === 'Resolved' || record.status === 'Granted' ? 'check' : 
+                                          record.status === 'Condition Discharged' ? 'check-circle' :
+                                          record.status === 'Rejected' ? 'x' : 'alert-circle'" 
+                                    size="md" 
+                                    color="white" 
+                                    strokeWidth="2.5" 
+                                  />
                                 </div>
                               </div>
-                              
-                              <!-- Decision -->
-                              <div class="vertical-timeline-item">
-                                <div class="vertical-timeline-marker" :class="'vertical-status-marker-' + getStatusClass(record.status)">
-                                  <div class="vertical-marker-inner">
-                                    <FeatherIcon 
-                                      :name="record.status === 'Approved' || record.status === 'Approved with Conditions' || record.status === 'Resolved' || record.status === 'Granted' ? 'check' : 
-                                            record.status === 'Condition Discharged' ? 'check-circle' :
-                                            record.status === 'Rejected' ? 'x' : 'alert-circle'" 
-                                      size="md" 
-                                      color="white" 
-                                      strokeWidth="2.5" 
-                                    />
-                                  </div>
-                                </div>
-                                <div class="vertical-timeline-content">
-                                  <div class="vertical-timeline-title">Decision: {{ record.status }}</div>
-                                  <div class="vertical-timeline-date">{{ formatDate(record.decisionDate) }}</div>
-                                </div>
+                              <div class="vertical-timeline-content">
+                                <div class="vertical-timeline-title">Decision: {{ record.status }}</div>
+                                <div class="vertical-timeline-date">{{ formatDate(record.decisionDate) }}</div>
                               </div>
                             </div>
                           </div>
                         </div>
                         
-                        <!-- Description Panel -->
-                        <div class="description-panel">
+                        <!-- AI Summary Card - Taking up 2/3 or more -->
+                        <div class="ai-summary-container">
                           <div class="timeline-header">
                             <FeatherIcon name="cpu" size="sm" color="var(--primary)" />
                             <span>AI Summary</span>
                           </div>
-                          <div class="description-content">
-                            <p class="application-description">{{ record.details }}</p>
-                          </div>
+                          <p class="ai-summary-text">{{ record.description }}</p>
                         </div>
                       </div>
                     </td>
@@ -619,6 +615,30 @@ onMounted(async () => {
     const apiData = await fetchAddressRecords(address.value);
     // Map API data to the format expected by the UI
     records.value = mapApiDataToRecords(apiData);
+    
+    // If available, use the summary data provided by the API for the overview section
+    if (apiData.length > 0) {
+      // Use the overall summary text directly from the API
+      if (apiData[0].overall_summary) {
+        // Correctly update the ref value
+        aiSummaryText.value = apiData[0].overall_summary;
+      } else {
+        // Generate a fallback summary if API doesn't provide one
+        aiSummaryText.value = generateSummaryText();
+      }
+      
+      // Store API stats to use directly in the UI
+      apiStats.value = {
+        totalApplications: apiData[0].total_applications || 0,
+        approvalRate: apiData[0].approvalrate || 0,
+        appeals: apiData[0].appeals || 0,
+        enforcements: apiData[0].enforcements || 0
+      };
+    } else {
+      // Generate a fallback summary if no API data
+      aiSummaryText.value = generateSummaryText();
+    }
+    
     loading.value = false;
 
     // Initialize the map after fetching records
@@ -647,6 +667,145 @@ const filteredRecords = computed(() => {
            record.description.toLowerCase().includes(filter);
   });
 });
+
+// Calculate statistics from records data
+const recordStats = computed(() => {
+  // If we have valid API stats, use those directly
+  if (apiStats.value.totalApplications > 0) {
+    return {
+      totalApplications: apiStats.value.totalApplications,
+      approvalRate: apiStats.value.approvalRate,
+      successfulAppeals: apiStats.value.appeals,
+      activeEnforcements: apiStats.value.enforcements,
+      rejected: records.value.filter(r => 
+        (r.type === 'Planning Application' || r.type === 'Appeal') && 
+        (r.status === 'Rejected' || 
+         r.status === 'Refused' || 
+         r.status === 'Declined' ||
+         r.status === 'Appeal Dismissed' ||
+         r.status.toLowerCase().includes('refused') ||
+         r.status.toLowerCase().includes('rejected') ||
+         r.status.toLowerCase().includes('dismissed'))
+      ).length
+    };
+  }
+
+  // Fall back to calculated stats if API stats aren't available
+  if (!records.value.length) {
+    return {
+      totalApplications: 0,
+      approvalRate: 0,
+      successfulAppeals: 0,
+      activeEnforcements: 0,
+      rejected: 0
+    };
+  }
+
+  // Count applications by type
+  const applications = records.value.filter(r => r.type === 'Planning Application').length;
+  
+  // Count approved applications - include all variants of approval statuses
+  const approved = records.value.filter(r => 
+    (r.type === 'Planning Application' || r.type === 'Appeal') && 
+    (r.status === 'Approved' || 
+     r.status === 'Approved with Conditions' || 
+     r.status === 'Granted' || 
+     r.status === 'Condition Discharged' || 
+     r.status === 'Resolved' ||
+     r.status.toLowerCase().includes('approval') ||
+     r.status.toLowerCase().includes('granted') ||
+     r.status.toLowerCase().includes('allowed'))
+  ).length;
+  
+  // Calculate approval rate
+  const totalDecided = records.value.filter(r => 
+    (r.type === 'Planning Application' || r.type === 'Appeal') && 
+    (r.status !== 'Pending' && 
+     r.status !== 'Awaiting Decision' &&
+     r.status !== 'In Progress' &&
+     r.status !== 'Outcome Pending')
+  ).length;
+  
+  const approvalRate = totalDecided ? Math.round((approved / totalDecided) * 100) : 0;
+  
+  // Count successful appeals
+  const successfulAppeals = records.value.filter(r => 
+    r.type === 'Appeal' && 
+    (r.status === 'Approved' || 
+     r.status === 'Approved with Conditions' || 
+     r.status === 'Granted' || 
+     r.status === 'Condition Discharged' ||
+     r.status === 'Appeal Allowed' ||
+     r.status.toLowerCase().includes('allowed'))
+  ).length;
+  
+  // Count active enforcements
+  const activeEnforcements = records.value.filter(r => 
+    r.type === 'Enforcement' && 
+    (r.status === 'Active' || 
+     r.status === 'Breach of Condition' ||
+     r.status === 'Enforcement Notice Served' ||
+     r.status === 'In Progress')
+  ).length;
+  
+  // Count rejected applications
+  const rejected = records.value.filter(r => 
+    (r.type === 'Planning Application' || r.type === 'Appeal') && 
+    (r.status === 'Rejected' || 
+     r.status === 'Refused' || 
+     r.status === 'Declined' ||
+     r.status === 'Appeal Dismissed' ||
+     r.status.toLowerCase().includes('refused') ||
+     r.status.toLowerCase().includes('rejected') ||
+     r.status.toLowerCase().includes('dismissed'))
+  ).length;
+  
+  return {
+    totalApplications: applications,
+    approvalRate,
+    successfulAppeals,
+    activeEnforcements,
+    rejected
+  };
+});
+
+// AI summary text - now defined as a ref, not computed
+const aiSummaryText = ref("Loading summary...");
+
+// Generate fallback summary text based on records if API doesn't provide one
+const generateSummaryText = () => {
+  if (!records.value.length) {
+    return "No planning data available for this address.";
+  }
+  
+  const types = new Set(records.value.map(r => r.type));
+  const hasMultipleTypes = types.size > 1;
+  const hasEnforcements = records.value.some(r => r.type === 'Enforcement');
+  const hasAppeals = records.value.some(r => r.type === 'Appeal');
+  
+  let summary = `This address has ${hasMultipleTypes ? 'a' : ''} ${hasMultipleTypes ? 'complex' : 'simple'} planning history`;
+  
+  if (hasMultipleTypes) {
+    summary += " with multiple applications";
+    if (hasEnforcements) summary += " and enforcement actions";
+    summary += ".";
+  } else {
+    summary += ".";
+  }
+  
+  if (records.value.length > 2) {
+    summary += " There are several noteworthy trends in the planning history including ";
+    
+    if (hasMultipleTypes) {
+      summary += "changes in application types over time";
+      summary += " and varying decision outcomes.";
+    } else {
+      summary += "variations in decision outcomes over time.";
+    }
+  }
+  
+  return summary;
+};
 
 const sortedRecords = computed(() => {
   return [...filteredRecords.value].sort((a, b) => {
@@ -680,27 +839,82 @@ const formatDate = (dateString) => {
 };
 
 const getTypeClass = (type) => {
-  switch (type) {
-    case 'Enforcement': return 'type-danger';
-    case 'Appeal': return 'type-warning';
-    case 'Planning Application': return 'type-success';
-    default: return '';
-  }
+  if (!type) return 'type-default';
+  
+  // Normalize the type to uppercase for case-insensitive matching
+  const normalizedType = type.toUpperCase();
+  
+  // Application types
+  if (normalizedType.includes('ENFORCEMENT')) return 'type-danger';
+  if (normalizedType.includes('APPEAL')) return 'type-warning';
+  if (normalizedType.includes('PLANNING APPLICATION') || normalizedType.includes('FULL MAJOR')) return 'type-success';
+  
+  // Specialized application types
+  if (normalizedType.includes('DISCHARGE OF CONDITION')) return 'type-purple';
+  if (normalizedType.includes('NON-MATERIAL AMENDMENT') || normalizedType.includes('NMA')) return 'type-teal';
+  if (normalizedType.includes('ADVERTISEMENT') || normalizedType.includes('ADV')) return 'type-indigo';
+  
+  // Default to blue if no specific type is matched
+  return 'type-default';
 };
 
 const getStatusClass = (status) => {
-  switch (status) {
-    case 'Approved': return 'status-success';
-    case 'Granted': return 'status-success';
-    case 'Condition Discharged': return 'status-success';
-    case 'Rejected': return 'status-danger';
-    case 'Pending': return 'status-warning';
-    case 'Active': return 'status-info';
-    case 'Withdrawn': return 'status-secondary';
-    case 'Resolved': return 'status-success';
-    case 'Approved with Conditions': return 'status-success';
-    default: return 'status-info';
+  if (!status) return 'status-default';
+  
+  // Normalize the status to uppercase for case-insensitive matching
+  const normalizedStatus = status.toUpperCase();
+  
+  // Success statuses with different gradations of green
+  if (normalizedStatus.includes('APPROVED')) {
+    return 'status-success-approved';
   }
+  
+  if (normalizedStatus.includes('GRANTED')) {
+    return 'status-success-granted';
+  }
+  
+  if (normalizedStatus.includes('APPROVED WITH CONDITIONS')) {
+    return 'status-success-conditions';
+  }
+  
+  if (normalizedStatus.includes('CONDITION DISCHARGED')) {
+    return 'status-success-discharged';
+  }
+  
+  if (normalizedStatus.includes('RESOLVED')) {
+    return 'status-success-resolved';
+  }
+  
+  // Failure statuses (rejected)
+  if (normalizedStatus.includes('REJECTED') || 
+      normalizedStatus.includes('REFUSED') || 
+      normalizedStatus.includes('DECLINED')) {
+    return 'status-danger';
+  }
+  
+  // Warning statuses (pending/in process)
+  if (normalizedStatus.includes('PENDING') || 
+      normalizedStatus.includes('OUTCOME PENDING') || 
+      normalizedStatus.includes('AWAITING')) {
+    return 'status-warning';
+  }
+  
+  // Active/open statuses
+  if (normalizedStatus.includes('ACTIVE') || 
+      normalizedStatus.includes('OPEN') || 
+      normalizedStatus.includes('IN PROGRESS')) {
+    return 'status-info';
+  }
+  
+  // Closed/withdrawn statuses
+  if (normalizedStatus.includes('WITHDRAWN') || 
+      normalizedStatus.includes('CLOSED') || 
+      normalizedStatus.includes('SUPERSEDED')) {
+    return 'status-secondary';
+  }
+  
+  // Default to info if no specific status is matched
+  return 'status-default';
 };
 
 const retryFetch = async () => {
@@ -728,6 +942,14 @@ const sortBy = (field) => {
     sortOrder.value = 'asc';
   }
 };
+
+// Add a new ref to store API statistics
+const apiStats = ref({
+  totalApplications: 0,
+  approvalRate: 0,
+  appeals: 0,
+  enforcements: 0
+});
 </script>
 
 <style scoped>
@@ -770,6 +992,11 @@ const sortBy = (field) => {
   border-radius: var(--radius-xl);
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.larger-badge {
+  font-size: 1.05rem;
+  padding: var(--spacing-sm) var(--spacing-lg);
 }
 
 .address-badge .icon {
@@ -902,6 +1129,7 @@ const sortBy = (field) => {
   color: var(--text);
   margin-bottom: var(--spacing-lg);
   line-height: 1.6;
+  text-align: justify;
 }
 
 /* New Indicator Cards */
@@ -1131,35 +1359,90 @@ const sortBy = (field) => {
 
 .records-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   text-align: left;
   font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .records-table th {
-  background-color: var(--background);
+  background-color: var(--primary-light);
+  color: white;
   padding: var(--spacing-md);
   font-weight: 600;
-  color: var(--text);
   white-space: nowrap;
 }
 
-.sortable-header {
-  cursor: pointer;
-  position: relative;
-  padding-right: var(--spacing-xl) !important;
-}
-
-.sort-indicator {
-  position: absolute;
-  right: var(--spacing-md);
-  color: var(--primary);
+.records-table tr {
+  border-bottom: 1px solid var(--border);
 }
 
 .records-table td {
   padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border);
   vertical-align: middle;
+}
+
+/* Alternate record groups with different background colors */
+.record-row:nth-child(4n+1), 
+.record-row:nth-child(4n+1) + .summary-row {
+  background-color: white;
+}
+
+.record-row:nth-child(4n+3), 
+.record-row:nth-child(4n+3) + .summary-row {
+  background-color: var(--background-lighter);
+}
+
+.record-row {
+  transition: background-color var(--transition-fast);
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+}
+
+/* Add subtle highlighting on hover */
+.record-row:hover {
+  background-color: rgba(var(--primary-rgb), 0.05);
+}
+
+/* Increase spacing and highlight the summary row */
+.summary-row {
+  border-bottom: 2px solid var(--border);
+  margin-bottom: var(--spacing-md);
+}
+
+.summary-cell {
+  padding: 0 !important;
+}
+
+.summary-container {
+  padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md) var(--spacing-md);
+  position: relative;
+}
+
+/* Add additional space between record groups */
+.expanded-row + .record-row {
+  border-top: 16px solid var(--background);
+}
+
+.summary-row + .record-row {
+  border-top: 16px solid var(--background);
+}
+
+/* Enhance the info button appearance */
+.info-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.3);
+}
+
+.info-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.4);
 }
 
 .app-number {
@@ -1173,14 +1456,6 @@ const sortBy = (field) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.record-row {
-  transition: background-color var(--transition-fast);
-}
-
-.record-row:hover {
-  background-color: rgba(59, 130, 246, 0.05);
 }
 
 .type-badge, .status-badge {
@@ -1207,9 +1482,49 @@ const sortBy = (field) => {
   color: #059669;
 }
 
-.status-success {
+.type-purple {
+  background-color: #EDE9FE;
+  color: #7C3AED;
+}
+
+.type-teal {
+  background-color: #CCFBF1;
+  color: #0D9488;
+}
+
+.type-indigo {
+  background-color: #E0E7FF;
+  color: #4F46E5;
+}
+
+.type-default {
+  background-color: #E4E4E7;
+  color: #3F3F46;
+}
+
+.status-success-approved {
   background-color: #D1FAE5;
   color: #059669;
+}
+
+.status-success-granted {
+  background-color: #A7F3D0;
+  color: #047857;
+}
+
+.status-success-conditions {
+  background-color: #6EE7B7;
+  color: #065F46;
+}
+
+.status-success-discharged {
+  background-color: #34D399;
+  color: #064E3B;
+}
+
+.status-success-resolved {
+  background-color: #ECFDF5;
+  color: #10B981;
 }
 
 .status-danger {
@@ -1230,6 +1545,11 @@ const sortBy = (field) => {
 .status-secondary {
   background-color: #F3F4F6;
   color: #4B5563;
+}
+
+.status-default {
+  background-color: #E4E4E7;
+  color: #3F3F46;
 }
 
 .btn-icon {
@@ -1617,31 +1937,51 @@ const sortBy = (field) => {
   margin: 0;
 }
 
-/* Fixed styles for the expandable section */
+/* Updated styles for expanded content */
 .expanded-grid {
   display: grid;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: minmax(250px, 1fr) 2fr;
   gap: var(--spacing-lg);
+  padding: var(--spacing-md);
 }
 
-/* Vertical Timeline Container in expandable rows */
-.vertical-timeline-container {
-  padding: var(--spacing-sm);
+.timeline-container, .ai-summary-container {
+  background-color: white;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.timeline-container {
+  min-width: 0;
   max-width: 100%;
 }
 
-.vertical-timeline {
-  position: relative;
-  height: 100%;
-  background-color: var(--background);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(var(--primary-rgb), 0.1);
+.ai-summary-container {
+  flex: 1;
 }
 
+.ai-summary-text {
+  margin: 0;
+  padding: var(--spacing-md);
+  line-height: 1.6;
+  color: var(--text);
+  text-align: justify;
+  background-color: var(--background-lighter);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary-light);
+  box-sizing: border-box;
+  overflow-y: auto;
+  max-height: 300px;
+  display: block;
+  height: auto;
+  min-height: 100px;
+}
+
+/* Timeline in expanded row */
 .timeline-header {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
   margin-bottom: var(--spacing-md);
   color: var(--primary);
@@ -1653,66 +1993,52 @@ const sortBy = (field) => {
 }
 
 .timeline-items-container {
-  position: relative;
-  padding-left: var(--spacing-xs);
+  display: flex;
+  gap: var(--spacing-md);
 }
 
-/* Description Panel in expandable rows */
-.description-panel {
-  background-color: var(--background);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
-  height: 100%;
-  display: flex;
+.timeline-items-container.vertical {
   flex-direction: column;
-  max-height: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(var(--primary-rgb), 0.1);
+  position: relative;
 }
 
-.description-content {
-  flex: 1;
-  margin-top: var(--spacing-sm);
+.timeline-items-container.vertical::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 18px;
+  width: 2px;
+  background-color: var(--border);
+  z-index: 0;
 }
 
-.application-description {
-  line-height: 1.6;
-  margin: 0;
-  color: var(--text);
-  background-color: white;
-  padding: var(--spacing-md);
-  border-radius: var(--radius-sm);
-  border-left: 4px solid var(--primary-light);
-  height: auto;
-  overflow: visible;
-  font-size: 1rem;
-}
-
-/* Status section in modal */
-.status-section {
-  margin-bottom: var(--spacing-md);
-}
-
-.status-banner {
-  padding: var(--spacing-md);
-  border-radius: var(--radius-lg);
+.timeline-item {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  margin: 0;
+  flex-direction: row;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+  padding-left: 45px;
 }
 
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile view adjustments */
 @media (max-width: 768px) {
   .expanded-grid {
     grid-template-columns: 1fr;
     gap: var(--spacing-md);
   }
   
-  .vertical-timeline-container {
+  .timeline-item {
     margin-bottom: var(--spacing-md);
+  }
+  
+  .ai-summary-text {
+    max-height: 200px;
   }
 }
 
@@ -1748,14 +2074,17 @@ const sortBy = (field) => {
 }
 
 .map-address {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   opacity: 0.9;
+  font-weight: normal;
+  max-width: 90%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.map-source {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  margin-top: 5px;
+.small-address {
+  font-size: 0.7rem;
 }
 
 .map-content {
@@ -1929,5 +2258,97 @@ const sortBy = (field) => {
 :deep(.leaflet-control-zoom-out:hover) {
   background-color: var(--background) !important;
   color: var(--primary) !important;
+}
+
+/* Summary row in the table */
+.summary-row {
+  background-color: var(--background-lighter);
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-cell {
+  padding: 0 !important;
+}
+
+.summary-container {
+  padding: var(--spacing-sm) var(--spacing-md);
+  position: relative;
+}
+
+.summary-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text);
+  text-align: justify;
+  position: relative;
+  /* Remove max-height and truncation */
+  max-height: none;
+  overflow: visible;
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+}
+
+.ai-icon {
+  color: var(--primary);
+  margin-right: var(--spacing-xs);
+  vertical-align: text-bottom;
+}
+
+.ai-label {
+  font-weight: 600;
+  color: var(--primary);
+  margin-right: var(--spacing-xs);
+}
+
+/* Timeline in expanded row */
+.timeline-container {
+  background-color: var(--background-lighter);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  margin: var(--spacing-sm) 0;
+}
+
+.timeline-header {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.timeline-items-container {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding-left: var(--spacing-xs);
+}
+
+.timeline-item {
+  position: relative;
+  flex: 1;
+  padding-left: 45px;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Set appropriate background colors */
+:root {
+  --background-lighter: #F9FAFB;
+}
+
+/* Mobile view adjustments */
+@media (max-width: 768px) {
+  .timeline-items-container {
+    flex-direction: column;
+  }
+  
+  .timeline-item {
+    margin-bottom: var(--spacing-md);
+  }
 }
 </style>

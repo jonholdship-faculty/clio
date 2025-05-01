@@ -1,6 +1,14 @@
 from clio.summary.openai_summariser import OpenAISummariser
 import pandas as pd
 
+APPROVAL_TYPES = [
+    "Grant Permission subject to Conditions",
+    "Grant Listed Building Consent (alteration/extension)*",
+    "Condition Discharged",
+    "Approved",
+    "Granted",
+]
+
 df = pd.read_excel("data/master-sheet updated.xlsx").dropna()
 print(len(df))
 summariser = OpenAISummariser()
@@ -20,6 +28,8 @@ for address, group_df in df.groupby("address"):
     application_types = (
         group_df["application_type"].str.lower().value_counts().to_dict()
     )
+
+    approval_perc = int(group_df["outcome"].isin(APPROVAL_TYPES).mean() * 100)
     records.append(
         {
             "address": address,
@@ -27,6 +37,7 @@ for address, group_df in df.groupby("address"):
             "total_count": len(group_df),
             "appeals": application_types.get("appeal", 0),
             "enforcements": application_types.get("enforcement", 0),
+            "approval_rate": approval_perc,
         }
     )
 summary_df = pd.DataFrame.from_records(records)

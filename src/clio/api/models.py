@@ -13,3 +13,4 @@ class ApplicationSummary(SQLModel):
     total_applications: int
     appeals: int
     enforcements: int
+    approvalrate: int

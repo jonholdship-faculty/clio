@@ -38,14 +38,13 @@
 
       <!-- Content (only show when not loading) -->
       <template v-else>
-        <!-- Summary Section - One Large Card -->
-        <div class="summary-sections animate-slide-up">
-          <div class="summary-card full-width">
+        <!-- Summary and Map Section Row -->
+        <div class="overview-map-row animate-slide-up">
+          <!-- AI Overview Section - Take up 2/3 of width -->
+          <div class="summary-card ai-overview">
             <div class="summary-header">
-              <svg xmlns="http://www.w3.org/2000/svg" class="summary-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h2>Overview</h2>
+              <FeatherIcon name="cpu" class="summary-icon" color="white" size="md" />
+              <h2>AI Overview</h2>
             </div>
             <div class="summary-content">
               <p>This address has a complex planning history with multiple applications and enforcement actions. There are several noteworthy trends in the planning history including changes in application types over time and varying decision outcomes.</p>
@@ -78,25 +77,34 @@
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Map Component -->
-        <div class="map-section animate-fade-in">
-          <div class="map-container">
-            <div class="map-header">
-              <h2>Location</h2>
-              <div class="map-address">{{ address }}</div>
-            </div>
-            <div class="map-content">
-              <div class="map-placeholder">
-                <img :src="`https://maps.googleapis.com/maps/api/staticmap?center=${encodeURIComponent(address)}&zoom=15&size=600x400&key=AIzaSyBGCql0HlN4C_D7B2BcIIhtuFGjhB-IKgA&markers=${encodeURIComponent(address)}`" 
-                  :alt="`Map showing ${address}`" 
-                  class="static-map-image"
-                />
-                <div class="map-overlay">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="map-pin-icon" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+          <!-- Map Component - Take up 1/3 of width -->
+          <div class="map-section">
+            <div class="map-container">
+              <div class="map-header">
+                <h2>Location</h2>
+                <div class="map-address">{{ address }}</div>
+                <div v-if="boundarySource" class="map-source">
+                  <span>Source: {{ 
+                    boundarySource === 'HMLR' ? 'HM Land Registry' : 
+                    boundarySource === 'OSM' ? 'OpenStreetMap' :
+                    'Demo Data'
+                  }}</span>
+                </div>
+              </div>
+              <div class="map-content">
+                <div id="property-map" class="leaflet-map"></div>
+                <div v-if="mapLoading" class="map-loading">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="loading-icon spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
+                  <span>Loading property boundary...</span>
+                </div>
+                <div v-if="mapError" class="map-error">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="error-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{{ mapError }}</span>
                 </div>
               </div>
             </div>
@@ -108,6 +116,15 @@
           <div class="section-header">
             <h2>All Records</h2>
             <div class="table-actions">
+              <button @click="toggleAllRows" class="expand-all-btn">
+                <FeatherIcon 
+                  :name="allExpanded ? 'minimize-2' : 'maximize-2'" 
+                  size="sm" 
+                  color="currentColor" 
+                  strokeWidth="2"
+                />
+                <span>{{ allExpanded ? 'Collapse All' : 'Expand All' }}</span>
+              </button>
               <div class="search-filter">
                 <svg xmlns="http://www.w3.org/2000/svg" class="filter-icon" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
@@ -121,6 +138,12 @@
             <table class="records-table">
               <thead>
                 <tr>
+                  <th @click="sortBy('decisionDate')" class="sortable-header">
+                    Decision Date
+                    <span v-if="sortField === 'decisionDate'" class="sort-indicator">
+                      {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                    </span>
+                  </th>
                   <th @click="sortBy('applicationNumber')" class="sortable-header">
                     Application Number
                     <span v-if="sortField === 'applicationNumber'" class="sort-indicator">
@@ -139,12 +162,6 @@
                       {{ sortOrder === 'asc' ? '↑' : '↓' }}
                     </span>
                   </th>
-                  <th @click="sortBy('decisionDate')" class="sortable-header">
-                    Decision Date
-                    <span v-if="sortField === 'decisionDate'" class="sort-indicator">
-                      {{ sortOrder === 'asc' ? '↑' : '↓' }}
-                    </span>
-                  </th>
                   <th>Address</th>
                   <th>Details</th>
                 </tr>
@@ -152,6 +169,7 @@
               <tbody>
                 <template v-for="record in filteredRecords" :key="record.id">
                   <tr class="record-row">
+                    <td>{{ formatDate(record.decisionDate) }}</td>
                     <td class="app-number">{{ record.applicationNumber }}</td>
                     <td>
                       <span :class="'status-badge ' + getStatusClass(record.status)">{{ record.status }}</span>
@@ -159,7 +177,6 @@
                     <td>
                       <span :class="'type-badge ' + getTypeClass(record.type)">{{ record.type }}</span>
                     </td>
-                    <td>{{ formatDate(record.decisionDate) }}</td>
                     <td class="address-cell">{{ record.address }}</td>
                     <td class="actions-cell">
                       <button @click="showDetails(record)" class="btn-icon info-btn">
@@ -169,53 +186,82 @@
                         </svg>
                       </button>
                       <button @click="toggleRowExpansion(record.id)" class="btn-icon expand-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="details-icon" viewBox="0 0 20 20" fill="currentColor">
-                          <path v-if="isRowExpanded(record.id)" fill-rule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
-                          <path v-else fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                        </svg>
+                        <FeatherIcon 
+                          :name="isRowExpanded(record.id) ? 'minus' : 'plus'" 
+                          size="sm" 
+                          color="white" 
+                        />
                       </button>
                     </td>
                   </tr>
                   <tr v-if="isRowExpanded(record.id)" class="expanded-row">
                     <td colspan="6" class="expanded-content">
                       <div class="expanded-grid">
-                        <div class="expanded-section">
-                          <h3 class="expanded-header">Application Details</h3>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Application Ref:</span>
-                            <span class="detail-value">{{ record.applicationNumber }}</span>
-                          </div>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Address:</span>
-                            <span class="detail-value">{{ record.address }}</span>
-                          </div>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Status:</span>
-                            <span class="detail-value">{{ record.status }}</span>
-                          </div>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Type:</span>
-                            <span class="detail-value">{{ record.type }}</span>
+                        <!-- Vertical Timeline -->
+                        <div class="vertical-timeline-container">
+                          <div class="vertical-timeline">
+                            <div class="timeline-header">Application Timeline</div>
+                            
+                            <!-- Timeline items in a row format for better space utilization -->
+                            <div class="timeline-items-container">
+                              <!-- Submission -->
+                              <div class="vertical-timeline-item">
+                                <div class="vertical-timeline-marker">
+                                  <div class="vertical-marker-inner">
+                                    <FeatherIcon name="edit-3" size="md" color="white" strokeWidth="2.5" />
+                                  </div>
+                                </div>
+                                <div class="vertical-timeline-content">
+                                  <div class="vertical-timeline-title">Application Submitted</div>
+                                  <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</div>
+                                </div>
+                              </div>
+                              
+                              <!-- Review -->
+                              <div class="vertical-timeline-item">
+                                <div class="vertical-timeline-marker">
+                                  <div class="vertical-marker-inner">
+                                    <FeatherIcon name="clipboard" size="md" color="white" strokeWidth="2.5" />
+                                  </div>
+                                </div>
+                                <div class="vertical-timeline-content">
+                                  <div class="vertical-timeline-title">Application Reviewed</div>
+                                  <div class="vertical-timeline-date">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</div>
+                                </div>
+                              </div>
+                              
+                              <!-- Decision -->
+                              <div class="vertical-timeline-item">
+                                <div class="vertical-timeline-marker" :class="'vertical-status-marker-' + getStatusClass(record.status)">
+                                  <div class="vertical-marker-inner">
+                                    <FeatherIcon 
+                                      :name="record.status === 'Approved' || record.status === 'Approved with Conditions' || record.status === 'Resolved' || record.status === 'Granted' ? 'check' : 
+                                            record.status === 'Condition Discharged' ? 'check-circle' :
+                                            record.status === 'Rejected' ? 'x' : 'alert-circle'" 
+                                      size="md" 
+                                      color="white" 
+                                      strokeWidth="2.5" 
+                                    />
+                                  </div>
+                                </div>
+                                <div class="vertical-timeline-content">
+                                  <div class="vertical-timeline-title">Decision: {{ record.status }}</div>
+                                  <div class="vertical-timeline-date">{{ formatDate(record.decisionDate) }}</div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div class="expanded-section">
-                          <h3 class="expanded-header">Timeline</h3>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Submission Date:</span>
-                            <span class="detail-value">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 2)) }}</span>
+                        
+                        <!-- Description Panel -->
+                        <div class="description-panel">
+                          <div class="timeline-header">
+                            <FeatherIcon name="cpu" size="sm" color="var(--primary)" />
+                            <span>AI Summary</span>
                           </div>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Review Date:</span>
-                            <span class="detail-value">{{ formatDate(new Date(record.decisionDate).setMonth(new Date(record.decisionDate).getMonth() - 1)) }}</span>
+                          <div class="description-content">
+                            <p class="application-description">{{ record.details }}</p>
                           </div>
-                          <div class="expanded-detail">
-                            <span class="detail-label">Decision Date:</span>
-                            <span class="detail-value">{{ formatDate(record.decisionDate) }}</span>
-                          </div>
-                        </div>
-                        <div class="expanded-section full-width">
-                          <h3 class="expanded-header">Description</h3>
-                          <p class="expanded-description">{{ record.details }}</p>
                         </div>
                       </div>
                     </td>
@@ -244,49 +290,133 @@
         <div class="modal-content" @click.stop>
           <div class="modal-header">
             <div class="modal-title">
-              <h3>{{ selectedRecord?.description || '' }}</h3>
-              <span class="modal-app-number">{{ selectedRecord?.applicationNumber }}</span>
+              <h3>Planning Application Details</h3>
+              <div class="modal-subtitle">
+                <span class="modal-app-number">{{ selectedRecord?.applicationNumber }}</span>
+                <span class="modal-separator">•</span>
+                <span :class="'type-badge-small ' + getTypeClass(selectedRecord?.type)">{{ selectedRecord?.type }}</span>
+              </div>
             </div>
             <button @click="displayDialog = false" class="modal-close">
-              <svg xmlns="http://www.w3.org/2000/svg" class="close-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
+              <FeatherIcon name="x" size="sm" color="var(--text-light)" />
             </button>
           </div>
           
           <div v-if="selectedRecord" class="modal-body">
             <div class="detail-grid">
-              <div class="detail-group">
-                <div class="detail-label">Address</div>
-                <div class="detail-value">{{ selectedRecord.address }}</div>
-              </div>
-              
-              <div class="detail-group">
-                <div class="detail-label">Decision Date</div>
-                <div class="detail-value">{{ formatDate(selectedRecord.decisionDate) }}</div>
-              </div>
-              
-              <div class="detail-group">
-                <div class="detail-label">Type</div>
-                <div class="detail-value">
-                  <span :class="'type-badge ' + getTypeClass(selectedRecord.type)">
-                    {{ selectedRecord.type }}
-                  </span>
+              <!-- Left column - Application details and timeline -->
+              <div class="detail-column">
+                <div class="detail-section">
+                  <h4 class="section-title">
+                    <FeatherIcon name="map-pin" size="sm" color="var(--primary)" />
+                    Location Information
+                  </h4>
+                  <div class="detail-group">
+                    <div class="detail-label">Address</div>
+                    <div class="detail-value address-value">{{ selectedRecord.address }}</div>
+                  </div>
+                  
+                  <div class="detail-group">
+                    <div class="detail-label">Reference</div>
+                    <div class="detail-value mono">{{ selectedRecord.applicationNumber }}</div>
+                  </div>
+                  
+                  <div class="detail-group">
+                    <div class="detail-label">Type</div>
+                    <div class="detail-value">
+                      <span :class="'type-badge ' + getTypeClass(selectedRecord.type)">
+                        {{ selectedRecord.type }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Timeline moved inside left column -->
+                <div class="detail-section timeline-section">
+                  <h4 class="section-title">
+                    <FeatherIcon name="clock" size="sm" color="var(--primary)" />
+                    Application Timeline
+                  </h4>
+                  <div class="modal-timeline">
+                    <!-- Submission -->
+                    <div class="vertical-timeline-item">
+                      <div class="vertical-timeline-marker">
+                        <div class="vertical-marker-inner">
+                          <FeatherIcon name="edit-3" size="sm" color="white" />
+                        </div>
+                      </div>
+                      <div class="vertical-timeline-content">
+                        <div class="vertical-timeline-title">Application Submitted</div>
+                        <div class="vertical-timeline-date">{{ formatDate(new Date(selectedRecord.decisionDate).setMonth(new Date(selectedRecord.decisionDate).getMonth() - 2)) }}</div>
+                      </div>
+                    </div>
+                    
+                    <!-- Review -->
+                    <div class="vertical-timeline-item">
+                      <div class="vertical-timeline-marker">
+                        <div class="vertical-marker-inner">
+                          <FeatherIcon name="clipboard" size="sm" color="white" />
+                        </div>
+                      </div>
+                      <div class="vertical-timeline-content">
+                        <div class="vertical-timeline-title">Application Reviewed</div>
+                        <div class="vertical-timeline-date">{{ formatDate(new Date(selectedRecord.decisionDate).setMonth(new Date(selectedRecord.decisionDate).getMonth() - 1)) }}</div>
+                      </div>
+                    </div>
+                    
+                    <!-- Decision -->
+                    <div class="vertical-timeline-item">
+                      <div class="vertical-timeline-marker" :class="'vertical-status-marker-' + getStatusClass(selectedRecord.status)">
+                        <div class="vertical-marker-inner">
+                          <FeatherIcon 
+                            :name="selectedRecord.status === 'Approved' || selectedRecord.status === 'Approved with Conditions' || selectedRecord.status === 'Resolved' || selectedRecord.status === 'Granted' ? 'check' : 
+                                  selectedRecord.status === 'Condition Discharged' ? 'check-circle' :
+                                  selectedRecord.status === 'Rejected' ? 'x' : 'alert-circle'" 
+                            size="sm" 
+                            color="white" 
+                          />
+                        </div>
+                      </div>
+                      <div class="vertical-timeline-content">
+                        <div class="vertical-timeline-title">Decision: {{ selectedRecord.status }}</div>
+                        <div class="vertical-timeline-date">{{ formatDate(selectedRecord.decisionDate) }}</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               
-              <div class="detail-group">
-                <div class="detail-label">Status</div>
-                <div class="detail-value">
-                  <span :class="'status-badge ' + getStatusClass(selectedRecord.status)">
-                    {{ selectedRecord.status }}
-                  </span>
+              <!-- Right column - Status banner and AI Summary -->
+              <div class="detail-column">
+                <!-- Status banner moved here -->
+                <div class="detail-section status-section">
+                  <h4 class="section-title">
+                    <FeatherIcon name="award" size="sm" color="var(--primary)" />
+                    Decision Status
+                  </h4>
+                  <div class="status-banner" :class="'status-bg-' + getStatusClass(selectedRecord.status)">
+                    <FeatherIcon 
+                      :name="selectedRecord.status === 'Approved' || selectedRecord.status === 'Approved with Conditions' || selectedRecord.status === 'Resolved' || selectedRecord.status === 'Granted' ? 'check' : 
+                            selectedRecord.status === 'Condition Discharged' ? 'check-circle' :
+                            selectedRecord.status === 'Rejected' ? 'x' : 'alert-circle'" 
+                      size="sm" 
+                      :color="getStatusClass(selectedRecord.status) === 'status-success' ? '#059669' : 
+                             getStatusClass(selectedRecord.status) === 'status-danger' ? '#DC2626' : 
+                             getStatusClass(selectedRecord.status) === 'status-warning' ? '#D97706' : 
+                             getStatusClass(selectedRecord.status) === 'status-info' ? '#2563EB' : '#4B5563'" 
+                    />
+                    <span class="status-text">{{ selectedRecord.status }}</span>
+                  </div>
                 </div>
-              </div>
-              
-              <div class="detail-group full-width">
-                <div class="detail-label">Details</div>
-                <div class="detail-value">{{ selectedRecord.details }}</div>
+                
+                <!-- AI Summary remains in the right column -->
+                <div class="detail-section description-section">
+                  <h4 class="section-title">
+                    <FeatherIcon name="cpu" size="sm" color="var(--primary)" />
+                    AI Summary
+                  </h4>
+                  <p class="detail-description">{{ selectedRecord.description }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -297,10 +427,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { fetchAddressRecords, mapApiDataToRecords } from '../data/api';
 import { aiSummaries } from '../data/sampleData';
+import FeatherIcon from '../components/FeatherIcon.vue';
+import { fetchBoundary } from '../services/boundary';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 const router = useRouter();
 const route = useRoute();
@@ -315,16 +449,126 @@ const sortField = ref('decisionDate');
 const sortOrder = ref('desc');
 const displayDialog = ref(false);
 const selectedRecord = ref(null);
-const expandedRows = ref([]); // Track which rows are expanded
+const expandedRows = ref([]);
+const allExpanded = ref(false);
+
+// Map related state
+const mapLoading = ref(false);
+const mapError = ref(null);
+const boundarySource = ref(null);
+let map = null;
+let boundaryLayer = null;
+
+// Initialize and clean up the map
+const initMap = async () => {
+  if (map) return; // Map already initialized
+  
+  // Wait for the DOM to be ready
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  const mapContainer = document.getElementById('property-map');
+  if (!mapContainer) {
+    console.error('Map container not found');
+    return;
+  }
+  
+  try {
+    const OS_KEY = "AnMmQNd5qLVDhJuSQGYypNsSozw1DEqj";
+    
+    // Initialize the map with a default UK center
+    map = L.map('property-map').setView([51.505, -0.09], 13);
+    
+    // Add the OS tile layer
+    L.tileLayer(
+      `https://api.os.uk/maps/raster/v1/zxy/Light_3857/{z}/{x}/{y}.png?key=${OS_KEY}`,
+      {
+        attribution: '© Ordnance Survey, © OpenStreetMap contributors',
+        maxZoom: 18
+      }
+    ).addTo(map);
+    
+    // Try to fetch and display the boundary
+    await fetchPropertyBoundary();
+  } catch (error) {
+    console.error('Error initializing map:', error);
+    mapError.value = 'Failed to initialize map';
+  }
+};
+
+const cleanupMap = () => {
+  if (map) {
+    map.remove();
+    map = null;
+  }
+};
+
+// Fetch and display the property boundary
+const fetchPropertyBoundary = async () => {
+  if (!address.value || !map) return;
+  
+  mapLoading.value = true;
+  mapError.value = null;
+  boundarySource.value = null;
+  
+  try {
+    // Clear previous boundary if exists
+    if (boundaryLayer) {
+      map.removeLayer(boundaryLayer);
+      boundaryLayer = null;
+    }
+    
+    // Fetch the boundary
+    const result = await fetchBoundary(address.value);
+    boundarySource.value = result.source;
+    
+    // Add the boundary to the map
+    boundaryLayer = L.geoJSON(result.geojson, {
+      style: {
+        color: '#FF5500',
+        weight: 2,
+        opacity: 0.8,
+        fillColor: '#FF5500',
+        fillOpacity: 0.2
+      }
+    }).addTo(map);
+    
+    // Fit the map to the boundary
+    map.fitBounds(boundaryLayer.getBounds(), { padding: [30, 30] });
+    
+    // Add a marker for the center
+    L.marker([result.center.lat, result.center.lon]).addTo(map);
+    
+  } catch (err) {
+    console.error('Error fetching property boundary:', err);
+    mapError.value = `Failed to load property boundary: ${err.message}`;
+  } finally {
+    mapLoading.value = false;
+  }
+};
 
 // Toggle row expansion
 const toggleRowExpansion = (recordId) => {
   const index = expandedRows.value.indexOf(recordId);
-  if (index >= 0) {
-    expandedRows.value.splice(index, 1);
-  } else {
+  if (index === -1) {
     expandedRows.value.push(recordId);
+  } else {
+    expandedRows.value.splice(index, 1);
   }
+  
+  // Update allExpanded state based on whether all rows are now expanded
+  allExpanded.value = expandedRows.value.length === records.value.length;
+};
+
+// Toggle all rows expansion
+const toggleAllRows = () => {
+  if (allExpanded.value) {
+    // Collapse all rows
+    expandedRows.value = [];
+  } else {
+    // Expand all rows
+    expandedRows.value = records.value.map(record => record.id);
+  }
+  allExpanded.value = !allExpanded.value;
 };
 
 // Check if a row is expanded
@@ -341,11 +585,18 @@ onMounted(async () => {
     // Map API data to the format expected by the UI
     records.value = mapApiDataToRecords(apiData);
     loading.value = false;
+    
+    // Initialize the map after fetching records
+    await initMap();
   } catch (err) {
     error.value = 'Failed to load planning records. Please try again later.';
     loading.value = false;
     console.error('Error loading records:', err);
   }
+});
+
+onUnmounted(() => {
+  cleanupMap();
 });
 
 // Filter, sort, and paginate data
@@ -405,6 +656,8 @@ const getTypeClass = (type) => {
 const getStatusClass = (status) => {
   switch (status) {
     case 'Approved': return 'status-success';
+    case 'Granted': return 'status-success';
+    case 'Condition Discharged': return 'status-success';
     case 'Rejected': return 'status-danger';
     case 'Pending': return 'status-warning';
     case 'Active': return 'status-info';
@@ -541,6 +794,35 @@ const sortBy = (field) => {
 .summary-sections {
   margin-bottom: var(--spacing-xl);
   width: 100%;
+}
+
+/* New Overview Map Row Layout */
+.overview-map-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  width: 100%;
+  align-items: stretch; /* Ensures both cards stretch to same height */
+}
+
+.ai-overview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.ai-overview .summary-content {
+  flex: 1; /* Allow content to expand to fill space */
+  display: flex;
+  flex-direction: column;
+}
+
+.map-section {
+  margin-bottom: 0; /* Override original margin */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .summary-card {
@@ -970,16 +1252,29 @@ const sortBy = (field) => {
   align-items: center;
   z-index: 1000;
   padding: var(--spacing-md);
+  backdrop-filter: blur(3px);
 }
 
 .modal-content {
   background-color: white;
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
+  animation: modal-in 0.3s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -988,6 +1283,7 @@ const sortBy = (field) => {
   align-items: flex-start;
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border);
+  background-color: var(--background);
 }
 
 .modal-title {
@@ -998,36 +1294,43 @@ const sortBy = (field) => {
 
 .modal-title h3 {
   margin: 0;
-  color: var(--text);
-  font-size: 1.25rem;
+  color: var(--primary);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.modal-subtitle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .modal-app-number {
   font-family: monospace;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.modal-separator {
   color: var(--text-light);
   font-size: 0.9rem;
 }
 
 .modal-close {
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--text-light);
   cursor: pointer;
   padding: var(--spacing-xs);
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-normal);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .modal-close:hover {
-  background-color: var(--border);
-}
-
-.close-icon {
-  width: 24px;
-  height: 24px;
+  background-color: var(--background-darker);
 }
 
 .modal-body {
@@ -1040,281 +1343,429 @@ const sortBy = (field) => {
   gap: var(--spacing-lg);
 }
 
-.detail-group {
+.detail-column {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-md);
 }
 
-.full-width {
-  width: 100%;
-  max-width: 100%;
+.detail-section {
+  background-color: var(--background);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--primary);
+  margin: 0 0 var(--spacing-md) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.detail-group {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-group:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .detail-label {
-  font-size: 0.9rem;
-  font-weight: 500;
   color: var(--text-light);
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+}
+
+.detail-value {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.mono {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--primary);
+  font-size: 0.95rem;
+}
+
+.detail-description {
+  line-height: 1.6;
+  color: var(--text);
+  background-color: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary-light);
+  margin: 0;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Status banner redesign */
+.status-banner {
+  grid-column: 1 / -1;
+  background-color: var(--background);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.status-banner:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.status-text {
+  font-size: 1.1rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.detail-value {
-  font-size: 1rem;
-  color: var(--text);
+/* Modal Timeline */
+.modal-timeline {
+  position: relative;
+  padding: var(--spacing-md) var(--spacing-xs);
 }
 
-/* Transitions */
-.modal-enter-active,
-.modal-leave-active {
+.vertical-timeline-item {
+  position: relative;
+  display: flex;
+  margin-bottom: var(--spacing-md);
+  padding-left: 45px;
+}
+
+.vertical-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.vertical-timeline-marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+}
+
+.vertical-marker-inner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--primary-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  box-shadow: 0 0 0 4px white, 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.vertical-timeline-item:hover .vertical-marker-inner {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 4px white, 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
+.vertical-timeline-content {
+  flex: 1;
+  padding-right: var(--spacing-xs);
+}
+
+.vertical-timeline-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.vertical-timeline-date {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-weight: 500;
+  margin-bottom: 3px;
+}
+
+/* Status-specific marker colors */
+.vertical-status-marker-status-success .vertical-marker-inner {
+  background-color: #059669;
+}
+
+.vertical-status-marker-status-danger .vertical-marker-inner {
+  background-color: #DC2626;
+}
+
+.vertical-status-marker-status-warning .vertical-marker-inner {
+  background-color: #D97706;
+}
+
+.vertical-status-marker-status-info .vertical-marker-inner {
+  background-color: #2563EB;
+}
+
+.vertical-status-marker-status-secondary .vertical-marker-inner {
+  background-color: #4B5563;
+}
+
+/* Modal transitions */
+.modal-enter-active, .modal-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.modal-enter-from,
-.modal-leave-to {
+.modal-enter-from, .modal-leave-to {
   opacity: 0;
 }
 
 @media (max-width: 768px) {
-  .dashboard-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-  
-  .summary-sections {
-    grid-template-columns: 1fr;
-  }
-  
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-md);
-  }
-  
   .detail-grid {
     grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
   
-  .full-width {
-    grid-column: span 1;
+  .overview-map-row {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .map-section {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .timeline-track {
+    left: 100px;
+  }
+  
+  .timeline-point {
+    grid-template-columns: 100px 50px 1fr;
+  }
+  
+  .timeline-date {
+    font-size: 0.8rem;
+  }
+  
+  .marker-inner {
+    width: 30px;
+    height: 30px;
   }
 }
 
-.loading-container, .error-container {
+/* Update status banner styling to fit in the column */
+.status-section {
+  margin-bottom: var(--spacing-md);
+}
+
+.status-banner {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
-  background-color: var(--card-bg);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  margin: 2rem 0;
-  text-align: center;
+  gap: var(--spacing-sm);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 0;
 }
 
-.loading-icon, .error-icon {
-  width: 48px;
-  height: 48px;
-  margin-bottom: 1rem;
-  color: var(--primary);
-}
-
-.error-icon {
-  color: var(--error);
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-.actions-cell {
-  display: flex;
-  gap: var(--spacing-xs);
-}
-
-.info-btn {
-  background-color: var(--info);
-}
-
-.info-btn:hover {
-  background-color: var(--info-dark, #0369a1);
-}
-
-.expand-btn {
-  background-color: var(--success);
-}
-
-.expand-btn:hover {
-  background-color: var(--success-dark, #047857);
-}
-
-.expanded-row {
-  background-color: rgba(var(--primary-rgb), 0.03);
-}
-
-.expanded-content {
-  padding: var(--spacing-lg);
-  border-top: 1px dashed var(--border);
-  border-bottom: 1px dashed var(--border);
-}
-
+/* Fixed styles for the expandable section */
 .expanded-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 400px 1fr;
   gap: var(--spacing-lg);
 }
 
-.expanded-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
+/* Vertical Timeline Container in expandable rows */
+.vertical-timeline-container {
+  padding: var(--spacing-sm);
+  max-width: 100%;
 }
 
-.expanded-section.full-width {
-  grid-column: 1 / -1;
+.vertical-timeline {
+  position: relative;
+  height: 100%;
+  background-color: var(--background);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
 }
 
-.expanded-header {
-  font-size: 1rem;
+.timeline-header {
+  font-size: 1.05rem;
   font-weight: 600;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
   color: var(--primary);
   border-bottom: 1px solid var(--border);
   padding-bottom: var(--spacing-xs);
-}
-
-.expanded-detail {
   display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
-  font-size: 0.9rem;
-  line-height: 1.5;
 }
 
-.detail-label {
-  font-weight: 600;
-  color: var(--text-light);
-  min-width: 130px;
+.timeline-items-container {
+  position: relative;
+  padding-left: var(--spacing-xs);
 }
 
-.detail-value {
-  color: var(--text);
+/* Description Panel in expandable rows */
+.description-panel {
+  background-color: var(--background);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(var(--primary-rgb), 0.1);
 }
 
-.expanded-description {
+.description-content {
+  flex: 1;
+  margin-top: var(--spacing-sm);
+}
+
+.application-description {
   line-height: 1.6;
   margin: 0;
   color: var(--text);
+  background-color: white;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary-light);
+  height: auto;
+  overflow: visible;
+  font-size: 1rem;
 }
 
-:deep(body.govuk-theme) .expanded-row {
-  background-color: #f3f2f1;
+/* Status section in modal */
+.status-section {
+  margin-bottom: var(--spacing-md);
 }
 
-:deep(body.govuk-theme) .expanded-header {
-  font-family: "GDS Transport", arial, sans-serif;
-  font-weight: 700;
-  color: #0b0c0c;
-  border-bottom-color: #b1b4b6;
-}
-
-:deep(body.govuk-theme) .detail-label {
-  font-family: "GDS Transport", arial, sans-serif;
-  font-weight: 700;
-  color: #505a5f;
-}
-
-:deep(body.govuk-theme) .detail-value {
-  font-family: "GDS Transport", arial, sans-serif;
-  color: #0b0c0c;
+.status-banner {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
   .expanded-grid {
     grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .vertical-timeline-container {
+    margin-bottom: var(--spacing-md);
   }
 }
 
 /* Map Section */
 .map-section {
   margin-bottom: var(--spacing-xl);
-  width: 100%;
 }
 
 .map-container {
-  background-color: white;
   border-radius: var(--radius-lg);
   overflow: hidden;
+  background-color: white;
   box-shadow: var(--shadow-md);
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  flex: 1;
 }
 
 .map-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--primary);
   color: white;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
 .map-header h2 {
+  color: white;
   margin: 0;
   font-size: 1.1rem;
-  color: white;
 }
 
 .map-address {
   font-size: 0.9rem;
-  font-weight: 500;
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: var(--spacing-xs) var(--spacing-md);
-  border-radius: var(--radius-md);
+  opacity: 0.9;
+}
+
+.map-source {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 5px;
 }
 
 .map-content {
-  width: 100%;
-}
-
-.map-placeholder {
+  flex: 1; /* Allow map to fill remaining space */
   position: relative;
-  width: 100%;
-  height: 400px;
+  min-height: 335px;
 }
 
-.static-map-image {
-  width: 100%;
+.leaflet-map {
   height: 100%;
-  object-fit: cover;
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
+  width: 100%;
+  z-index: 1;
 }
 
-.map-overlay {
+.map-loading, .map-error {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  border-top-left-radius: var(--radius-lg);
-  border-top-right-radius: var(--radius-lg);
+  justify-content: center;
+  gap: var(--spacing-md);
+  z-index: 2;
 }
 
-.map-pin-icon {
-  width: 24px;
-  height: 24px;
+.loading-icon, .error-icon {
+  width: 32px;
+  height: 32px;
   color: var(--primary);
 }
 
+.spin {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* GOV.UK theme adjustments for map */
 :deep(body.govuk-theme) .map-container {
   border-radius: 0;
   box-shadow: none;
@@ -1328,15 +1779,120 @@ const sortBy = (field) => {
 
 :deep(body.govuk-theme) .map-header h2 {
   font-family: "GDS Transport", arial, sans-serif;
-  font-weight: 700;
   font-size: 19px;
+  font-weight: 700;
+  margin: 0;
 }
 
-:deep(body.govuk-theme) .map-address {
-  font-family: "GDS Transport", arial, sans-serif;
+/* Fix any Leaflet specific style issues */
+:deep(.leaflet-container) {
+  font: inherit;
 }
 
-:deep(body.govuk-theme) .map-frame {
+:deep(.leaflet-control-attribution) {
+  font-size: 10px;
+}
+
+/* Updated styling for the expand all button */
+.expand-all-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: linear-gradient(to right, var(--primary-light), var(--primary));
+  color: white;
+  font-weight: 600;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  border: none;
+  box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.25);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.expand-all-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, var(--primary), var(--primary-dark));
+  z-index: -1;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.expand-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(var(--primary-rgb), 0.4);
+}
+
+.expand-all-btn:hover:before {
+  opacity: 1;
+}
+
+.expand-all-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(var(--primary-rgb), 0.3);
+}
+
+/* GOV.UK theme adjustments for expand-all button */
+:deep(body.govuk-theme) .expand-all-btn {
+  background: #00703c;
+  box-shadow: 0 2px 0 #002d18;
   border-radius: 0;
+  font-family: "GDS Transport", arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: white;
 }
-</style> 
+
+:deep(body.govuk-theme) .expand-all-btn:before {
+  display: none;
+}
+
+:deep(body.govuk-theme) .expand-all-btn:hover {
+  background-color: #005a30;
+  transform: none;
+  box-shadow: 0 2px 0 #002d18;
+}
+
+:deep(body.govuk-theme) .expand-all-btn:active {
+  top: 2px;
+  box-shadow: none;
+}
+
+/* Fix Leaflet zoom controls */
+:deep(.leaflet-control-container) {
+  position: absolute;
+  z-index: 1000;
+}
+
+:deep(.leaflet-control-zoom) {
+  margin: var(--spacing-md);
+  box-shadow: var(--shadow-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+:deep(.leaflet-control-zoom-in),
+:deep(.leaflet-control-zoom-out) {
+  color: var(--text) !important;
+  background-color: white !important;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  font-size: 18px;
+  font-weight: 600;
+  border: none !important;
+}
+
+:deep(.leaflet-control-zoom-in:hover),
+:deep(.leaflet-control-zoom-out:hover) {
+  background-color: var(--background) !important;
+  color: var(--primary) !important;
+}
+</style>

@@ -10,27 +10,6 @@
           <nav class="top-nav">
             <router-link to="/" class="nav-link">Home</router-link>
             <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
-            <div class="style-switcher">
-              <button @click="toggleStylesMenu" class="style-button">
-                <svg xmlns="http://www.w3.org/2000/svg" class="style-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 100-2 1 1 0 000 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z" clip-rule="evenodd" />
-                </svg>
-                <span>Styles</span>
-              </button>
-              <div v-if="stylesMenuOpen" class="styles-dropdown">
-                <div class="styles-menu-header">Choose Theme</div>
-                <div class="styles-options">
-                  <button @click="setTheme('default')" class="style-option">
-                    <div class="color-preview default"></div>
-                    <span>Default</span>
-                  </button>
-                  <button @click="setTheme('govuk')" class="style-option">
-                    <div class="color-preview govuk"></div>
-                    <span>GOV.UK</span>
-                  </button>
-                </div>
-              </div>
-            </div>
             <div class="user-profile">
               <span class="user-avatar">CS</span>
             </div>
@@ -63,12 +42,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
-const stylesMenuOpen = ref(false);
 const currentTheme = ref('default');
-
-const toggleStylesMenu = () => {
-  stylesMenuOpen.value = !stylesMenuOpen.value;
-};
 
 const setTheme = (theme) => {
   const bodyElement = document.body;
@@ -93,7 +67,6 @@ const setTheme = (theme) => {
   }
   
   currentTheme.value = theme;
-  stylesMenuOpen.value = false;
 };
 
 // Check if there's a stored theme on initial load
@@ -102,13 +75,6 @@ onMounted(() => {
   if (storedTheme) {
     currentTheme.value = storedTheme;
     setTheme(storedTheme);
-  }
-});
-
-// Close styles menu when clicking outside
-window.addEventListener('click', (e) => {
-  if (!e.target.closest('.style-switcher') && stylesMenuOpen.value) {
-    stylesMenuOpen.value = false;
   }
 });
 </script>
@@ -168,86 +134,6 @@ window.addEventListener('click', (e) => {
 
 .nav-link:hover, .nav-link.router-link-active {
   opacity: 1;
-}
-
-.style-switcher {
-  position: relative;
-}
-
-.style-button {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  color: white;
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: background-color var(--transition-normal);
-}
-
-.style-button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-.style-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.styles-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: var(--spacing-xs);
-  background-color: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  min-width: 200px;
-  z-index: 100;
-  overflow: hidden;
-  animation: fadeIn 0.2s ease-in-out;
-}
-
-.styles-menu-header {
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: var(--background);
-  color: var(--text);
-  font-weight: 600;
-  border-bottom: 1px solid var(--border);
-}
-
-.styles-options {
-  padding: var(--spacing-xs);
-}
-
-.style-option {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  text-align: left;
-  border-radius: var(--radius-sm);
-  transition: background-color var(--transition-normal);
-}
-
-.style-option:hover {
-  background-color: var(--background);
-}
-
-.color-preview {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-}
-
-.color-preview.default {
-  background-color: var(--primary);
-}
-
-.color-preview.govuk {
-  background-color: #005ea5;
 }
 
 .user-profile {
